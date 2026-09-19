@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="unit">
+      <UniqueIdentifier>{a1b2c3d0-1a2b-4c3d-8e4f-5f6a7b8c9d00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\common">
+      <UniqueIdentifier>{a1b2c3d1-1a2b-4c3d-8e4f-5f6a7b8c9d01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\config">
+      <UniqueIdentifier>{a1b2c3d2-1a2b-4c3d-8e4f-5f6a7b8c9d02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\embeddings">
+      <UniqueIdentifier>{a1b2c3d3-1a2b-4c3d-8e4f-5f6a7b8c9d03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\layers">
+      <UniqueIdentifier>{a1b2c3d4-1a2b-4c3d-8e4f-5f6a7b8c9d04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\metrics">
+      <UniqueIdentifier>{a1b2c3d5-1a2b-4c3d-8e4f-5f6a7b8c9d05}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\models">
+      <UniqueIdentifier>{a1b2c3d6-1a2b-4c3d-8e4f-5f6a7b8c9d06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\normalizations">
+      <UniqueIdentifier>{a1b2c3d7-1a2b-4c3d-8e4f-5f6a7b8c9d07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\tokenizers">
+      <UniqueIdentifier>{a1b2c3d8-1a2b-4c3d-8e4f-5f6a7b8c9d08}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="unit\common\BenchmarkTimerTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\common\ExceptionsTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\common\ParameterTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\common\TensorOpsTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\common\TensorTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\common\ValidationTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\config\ConfigTests.cpp">
+      <Filter>unit\config</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\embeddings\EmbeddingTests.cpp">
+      <Filter>unit\embeddings</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\embeddings\RotaryEmbeddingTests.cpp">
+      <Filter>unit\embeddings</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\embeddings\SinusoidalEmbeddingTests.cpp">
+      <Filter>unit\embeddings</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\layers\AttentionHeadTests.cpp">
+      <Filter>unit\layers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\layers\DecoderBlockTests.cpp">
+      <Filter>unit\layers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\layers\FeedForwardTests.cpp">
+      <Filter>unit\layers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\layers\LinearLayerTests.cpp">
+      <Filter>unit\layers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\layers\MultiHeadAttentionTests.cpp">
+      <Filter>unit\layers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\metrics\MetricsTests.cpp">
+      <Filter>unit\metrics</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\models\BertModelTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\models\DecoderOnlyModelTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\models\MiniTransformerTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\models\MoELayerTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\models\VanillaRNNTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\normalizations\RMSNormTests.cpp">
+      <Filter>unit\normalizations</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\tokenizers\UnigramTokenizerTests.cpp">
+      <Filter>unit\tokenizers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\tokenizers\WordPieceTokenizerTests.cpp">
+      <Filter>unit\tokenizers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="TestSupport.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

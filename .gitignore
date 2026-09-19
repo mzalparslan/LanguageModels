@@ -1,0 +1,64 @@
+# Visual Studio user and workspace files
+.vs/
+*.vcxproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio build directories
+Debug/
+Release/
+x64/
+x86/
+ARM/
+ARM64/
+[Bb]in/
+[Oo]bj/
+
+# NuGet packages (Google Test); restored by Visual Studio from
+# LanguageModels.Tests/packages.config.
+packages/
+
+# Makefile build output
+build/
+
+# Compiled C/C++ files
+*.obj
+*.o
+*.lo
+*.pch
+*.gch
+*.idb
+*.pdb
+*.ilk
+*.ipdb
+*.iobj
+
+# Libraries and executables
+*.lib
+*.a
+*.dll
+*.so
+*.dylib
+*.exe
+*.out
+
+# Log and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*~
+.DS_Store
+Thumbs.db
+
+# Large training corpora (fetch/keep locally, do not commit)
+resources/fra.txt
+
+# Post-build copies of resources/* into the Examples project dir, made so
+# F5 debugging (working directory = $(ProjectDir)) finds them by bare name.
+# The canonical copies live in resources/.
+/LanguageModels.Examples/fra.txt
+/LanguageModels.Examples/fra_debug.txt
+/LanguageModels.Examples/vocab_test.txt

@@ -1,0 +1,11 @@
+# Normalize line endings in the repository; check out with the platform default.
+* text=auto
+
+# make and the data files read by the examples must stay LF on every platform.
+Makefile text eol=lf
+resources/*.txt text eol=lf
+
+# Visual Studio files are CRLF.
+*.sln text eol=crlf
+*.vcxproj text eol=crlf
+*.vcxproj.filters text eol=crlf

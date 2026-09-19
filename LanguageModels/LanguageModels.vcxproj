@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{48FA991D-7A1C-43CB-A72A-F4A3B7029D5B}</ProjectGuid>
+    <RootNamespace>LanguageModels</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <!--
+    Header-only library: every implementation file here is a class template,
+    so there is nothing to compile into an object or a .lib. This project
+    exists to keep the headers organized and browsable in the IDE, and to
+    give LanguageModels.Examples something to depend on / include from.
+  -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <!--
+    ConfigurationType=Utility has no ClCompile step, so IntelliSense for
+    these headers is driven by NMakeIncludeSearchPath instead of
+    AdditionalIncludeDirectories. Without it, cross-folder includes like
+    BertLayer.h's #include "AttentionHead.h" show as unresolved in the IDE.
+  -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
+    <NMakeIncludeSearchPath>include\common;include\config;include\layers;include\embeddings;include\normalizations;include\models;include\tokenizers;include\metrics;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <IncludePath>$(SolutionDir)$(ProjectName)\include;$(SolutionDir)$(ProjectName)\include\common;$(SolutionDir)$(ProjectName)\include\config;$(SolutionDir)$(ProjectName)\include\embeddings;$(SolutionDir)$(ProjectName)\include\layers;$(SolutionDir)$(ProjectName)\include\models;$(SolutionDir)$(ProjectName)\include\normalizations;$(SolutionDir)$(ProjectName)\include\tokenizers;$(SolutionDir)$(ProjectName)\include\metrics;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
+    <NMakeIncludeSearchPath>include\common;include\config;include\layers;include\embeddings;include\normalizations;include\models;include\tokenizers;include\metrics;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <IncludePath>$(SolutionDir)$(ProjectName)\include;$(SolutionDir)$(ProjectName)\include\common;$(SolutionDir)$(ProjectName)\include\config;$(SolutionDir)$(ProjectName)\include\embeddings;$(SolutionDir)$(ProjectName)\include\layers;$(SolutionDir)$(ProjectName)\include\models;$(SolutionDir)$(ProjectName)\include\normalizations;$(SolutionDir)$(ProjectName)\include\tokenizers;$(SolutionDir)$(ProjectName)\include\metrics;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
+    <NMakeIncludeSearchPath>include\common;include\config;include\layers;include\embeddings;include\normalizations;include\models;include\tokenizers;include\metrics;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <IncludePath>$(SolutionDir)$(ProjectName)\include;$(SolutionDir)$(ProjectName)\include\common;$(SolutionDir)$(ProjectName)\include\config;$(SolutionDir)$(ProjectName)\include\embeddings;$(SolutionDir)$(ProjectName)\include\layers;$(SolutionDir)$(ProjectName)\include\models;$(SolutionDir)$(ProjectName)\include\normalizations;$(SolutionDir)$(ProjectName)\include\tokenizers;$(SolutionDir)$(ProjectName)\include\metrics;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
+    <NMakeIncludeSearchPath>include\common;include\config;include\layers;include\embeddings;include\normalizations;include\models;include\tokenizers;include\metrics;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+    <IncludePath>$(SolutionDir)$(ProjectName)\include;$(SolutionDir)$(ProjectName)\include\common;$(SolutionDir)$(ProjectName)\include\config;$(SolutionDir)$(ProjectName)\include\embeddings;$(SolutionDir)$(ProjectName)\include\layers;$(SolutionDir)$(ProjectName)\include\models;$(SolutionDir)$(ProjectName)\include\normalizations;$(SolutionDir)$(ProjectName)\include\tokenizers;$(SolutionDir)$(ProjectName)\include\metrics;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="include\common\Tensor.h" />
+    <ClInclude Include="include\common\Parameter.h" />
+    <ClInclude Include="include\common\TensorOps.h" />
+    <ClInclude Include="include\common\BenchmarkTimer.h" />
+    <ClInclude Include="include\config\ModelConfig.h" />
+    <ClInclude Include="include\config\MiniTransformerConfig.h" />
+    <ClInclude Include="include\config\BasicGPTConfig.h" />
+    <ClInclude Include="include\config\GPTWithUnigramConfig.h" />
+    <ClInclude Include="include\layers\DecoderBlockConcept.h" />
+    <ClInclude Include="include\layers\DecoderMultiHead.h" />
+    <ClInclude Include="include\layers\BasicDecoderBlock.h" />
+    <ClInclude Include="include\layers\DecoderWithMoe.h" />
+    <ClInclude Include="include\layers\LinearLayer.h" />
+    <ClInclude Include="include\layers\AttentionHead.h" />
+    <ClInclude Include="include\layers\FeedForward.h" />
+    <ClInclude Include="include\embeddings\Embedding.h" />
+    <ClInclude Include="include\embeddings\SinusoidalEmbedding.h" />
+    <ClInclude Include="include\embeddings\RotaryEmbedding.h" />
+    <ClInclude Include="include\layers\MultiHeadAttention.h" />
+    <ClInclude Include="include\normalizations\RMSNorm.h" />
+    <ClInclude Include="include\models\VanillaRNN.h" />
+    <ClInclude Include="include\models\MiniTransformer.h" />
+    <ClInclude Include="include\models\BERT.h" />
+    <ClInclude Include="include\models\BertLayer.h" />
+    <ClInclude Include="include\models\DecoderOnlyModel.h" />
+    <ClInclude Include="include\models\BasicGPT.h" />
+    <ClInclude Include="include\models\MoELayer.h" />
+    <ClInclude Include="include\models\BasicGPTWithMoE.h" />
+    <ClInclude Include="include\tokenizers\WordPieceTokenizer.h" />
+    <ClInclude Include="include\tokenizers\UnigramTokenizer.h" />
+    <ClInclude Include="include\metrics\Metrics.h" />
+    <ClInclude Include="include\common\Exceptions.h" />
+    <ClInclude Include="include\common\Validation.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
