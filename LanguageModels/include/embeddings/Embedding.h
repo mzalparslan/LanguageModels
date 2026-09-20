@@ -131,4 +131,24 @@ public:
 	void update(T lr, UpdateRule rule = UpdateRule::sgd()) {
 		this->table.update(lr, rule);
 	}
+
+	/**
+	 * @brief zeroGrad() spread over several threads (the table has a row for
+	 * every word, so for a large vocabulary clearing it takes a while).
+	 *
+	 * @param threads Most threads to use; 1 is the same as zeroGrad().
+	 */
+	void zeroGradParallel(std::size_t threads) {
+		table.zeroGradParallel(threads);
+	}
+
+	/**
+	 * @brief update() spread over several threads; bit-identical result.
+	 *
+	 * @param threads Most threads to use; 1 is the same as update().
+	 * @see Parameter::updateParallel
+	 */
+	void updateParallel(T lr, UpdateRule rule, std::size_t threads) {
+		table.updateParallel(lr, rule, threads);
+	}
 };

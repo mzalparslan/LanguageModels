@@ -102,6 +102,19 @@ public:
      * @throws InvalidParameterError If a token id is outside its vocabulary.
      */
     void forward(const std::vector<std::size_t>& src, const std::vector<std::size_t>& tgt, Tensor<T>& logits) {
+        forwardImpl(src, tgt, logits, 1);
+    }
+
+private:
+    /**
+     * @brief The work of forward(), with the final projection to the target
+     * vocabulary (the largest matrix multiply of a step) split between
+     * threads. The result does not depend on the thread count.
+     *
+     * @param threads Most threads to use; 1 runs everything on the caller.
+     */
+    void forwardImpl(const std::vector<std::size_t>& src, const std::vector<std::size_t>& tgt,
+        Tensor<T>& logits, std::size_t threads) {
         validation::requireNonEmpty(src.size(), "Source token sequence");
         validation::requireNonEmpty(tgt.size(), "Target token sequence");
         validation::requireAtMost(src.size(), MiniTransformerConfig::maxSeqLen, "Source sequence length");
@@ -196,9 +209,15 @@ public:
 
         // Final Projection
         // (Ideally we would have one more Norm here: decOut3 = Norm(decOut3))
-        proj.forward(decOut3, logits);
+        if (threads > 1) {
+            proj.forwardParallel(decOut3, logits, threads);
+        }
+        else {
+            proj.forward(decOut3, logits);
+        }
     }
 
+public:
     /**
      * @brief One full training step: zero gradients, forward, cross-entropy
      * loss, backward through every layer, then a parameter update.
@@ -388,6 +407,230 @@ public:
         encNorm2.update(lr, rule);
         decNorm1.update(lr, rule);
         decNorm2.update(lr, rule); 
+        decNorm3.update(lr, rule);
+
+        return loss;
+    }
+
+    /**
+     * @brief trainStep() with the vocabulary-sized work spread over several
+     * threads; the same training step, only faster.
+     *
+     * Almost all of a step's time goes into work that grows with the
+     * vocabulary, not with the model: the output projection (forward and
+     * backward), the softmax over every position, and clearing and updating
+     * the two embedding tables and the projection weights. Those parts run on
+     * several threads. The small encoder and decoder layers (width 32, a few
+     * tokens) stay on the calling thread, since handing them to another thread
+     * would cost more than the work.
+     *
+     * Every element is still computed with the same operations in the same
+     * order as trainStep(), so the loss and the updated weights are
+     * bit-identical to trainStep()'s, whatever the thread count.
+     *
+     * @param src Source token ids.
+     * @param tgt Decoder input ids.
+     * @param label Expected next-token ids, one per decoder position.
+     * @param lr Learning rate.
+     * @param rule Optimizer to apply (e.g. UpdateRule::adam(step)).
+     * @param threadCount Most threads to use; 0 uses the hardware thread count.
+     * The shared ThreadPool caps it at its size.
+     * @return Summed cross-entropy loss over target positions.
+     * @throws The same exceptions as trainStep().
+     */
+    T trainStepMultipleThread(const std::vector<std::size_t>& src,
+        const std::vector<std::size_t>& tgt,
+        const std::vector<std::size_t>& label,
+        T lr, UpdateRule rule, std::size_t threadCount = 0)
+    {
+        validation::requirePositiveFinite(lr, "Learning rate");
+        validation::requireSameSize(label.size(), tgt.size(), "Label sequence");
+
+        ThreadPool& pool = ThreadPool::shared();
+        const std::size_t threads = std::min(
+            threadCount == 0 ? ThreadPool::defaultThreadCount() : threadCount, pool.maxThreads());
+
+        // Zero Gradients: backward passes accumulate, so start clean. The two
+        // embedding tables and the projection are the big ones.
+        encEmb.zeroGradParallel(threads);
+        decEmb.zeroGradParallel(threads);
+        encAttn.zeroGrad();
+        decAttn1.zeroGrad();
+        decAttn2.zeroGrad();
+        ff.zeroGrad();
+        encFf.zeroGrad();
+        proj.zeroGradParallel(threads);
+        encNorm1.zeroGrad();
+        encNorm2.zeroGrad();
+        decNorm1.zeroGrad();
+        decNorm2.zeroGrad();
+        decNorm3.zeroGrad();
+
+        Tensor<T> logits;
+        forwardImpl(src, tgt, logits, threads);
+
+        // Cross Entropy Loss Grad: for softmax + cross-entropy gradient
+        // w.r.t. logits is simply (probabilities - one_hot(label)).
+        // Positions are independent, so threads take a share of them; each writes
+        // only its own rows of dlogits and its own entry of logProbOfLabel.
+        const std::size_t seq = logits.shape[0];
+        const std::size_t vocab = logits.shape[1];
+        Tensor<T> dlogits(logits.shape, 0);
+        std::vector<T> logProbOfLabel(seq);
+
+        const std::size_t minSoftmaxElementsPerThread = 4096;
+        pool.parallelFor(seq, std::max<std::size_t>(minSoftmaxElementsPerThread / vocab, 1), threads,
+            [&](std::size_t begin, std::size_t end) {
+                std::vector<T> probs(vocab);
+                for (std::size_t i = begin; i < end; i++) {
+                    // Softmax
+                    T maxValue = -1e9;
+                    for (std::size_t j = 0; j < vocab; j++) {
+                        maxValue = std::max(maxValue, logits.data[i * vocab + j]);
+                    }
+                    T sum = T(0);
+                    for (std::size_t j = 0; j < vocab; j++) {
+                        probs[j] = std::exp(logits.data[i * vocab + j] - maxValue);
+                        sum += probs[j];
+                    }
+                    validation::requireFinite(sum, "Softmax normalizer");
+                    validation::requireNonZeroDenominator(sum, "softmax normalizer");
+                    for (std::size_t j = 0; j < vocab; j++) {
+                        probs[j] /= sum;
+                    }
+
+                    // Log Loss
+                    std::size_t y = label[i];
+                    validation::requireBelow(y, vocab, "Label token id");
+                    logProbOfLabel[i] = std::log(probs[y]);
+
+                    // Grad: p - y
+                    for (std::size_t j = 0; j < vocab; j++) {
+                        dlogits.data[i * vocab + j] = probs[j];
+                    }
+                    dlogits.data[i * vocab + y] -= T(1);
+                }
+            });
+
+        // Summed in position order, as trainStep() does, so the total is identical.
+        T loss = T(0);
+        for (std::size_t i = 0; i < seq; i++) {
+            loss -= logProbOfLabel[i];
+        }
+
+        // A NaN, or an infinite loss (a label with probability 0), would poison
+        // every gradient below, so stop before backpropagating.
+        validation::requireFinite(loss, "Training loss");
+
+        // =======================
+        // BACKWARD PASS
+        // =======================
+
+        // --- Decoder Final Projection ---
+        Tensor<T> dDecOut3;
+        proj.backwardParallel(dlogits, dDecOut3, threads);
+
+        // --- Decoder Layer 3: FF ---
+        // x = x + FF(Norm(x))
+        // d_x = d_out + Norm.back(FF.back(d_out))
+        Tensor<T> dNorm3Out; // Grad at output of Norm3 (input to FF)
+        ff.backward(dDecOut3, dNorm3Out); // FF.back takes gradient from "FF output side" (dDecOut3)
+
+        Tensor<T> dDecN3In; // Grad at input of Norm3
+        decNorm3.backward(dNorm3Out, dDecN3In);
+
+        // Residual Sum: dDecRes2 = dDecOut3 (skip) + dDecN3In (branch)
+        Tensor<T> dDecRes2(dDecOut3.shape);
+        for (std::size_t i = 0; i < dDecRes2.size(); i++) {
+            dDecRes2[i] = dDecOut3[i] + dDecN3In[i];
+        }
+        // --- Decoder Layer 2: Cross Attn ---
+        // x = x + Attn(Norm(x), context)
+        Tensor<T> dNorm2Out;
+        Tensor<T> dEncOutCross, dEncOutCrossK; // Gradients w.r.t Encoder Outputs (K, V)
+        decAttn2.backward(dDecRes2, dNorm2Out, dEncOutCross, dEncOutCrossK);
+
+        Tensor<T> dDecN2In;
+        decNorm2.backward(dNorm2Out, dDecN2In);
+
+        // Residual Sum: dDecRes1 = dDecRes2 + dDecN2In
+        Tensor<T> dDecRes1(dDecRes2.shape);
+        for (std::size_t i = 0; i < dDecRes1.size(); i++) {
+            dDecRes1[i] = dDecRes2[i] + dDecN2In[i];
+        }
+
+        // --- Decoder Layer 1: Masked Self Attn ---
+        Tensor<T> dNorm1Out, dDummyK, dDummyV;
+        decAttn1.backward(dDecRes1, dNorm1Out, dDummyK, dDummyV);
+        // Self-attention: Q, K, V all come from same source (dNorm1Out).
+        // AttentionHead::backward returns dQ_in (into dNorm1Out arg), dK_in, dV_in.
+        // We must sum them up.
+        for (std::size_t i = 0; i < dNorm1Out.size(); i++) {
+            dNorm1Out[i] += dDummyK[i] + dDummyV[i];
+        }
+
+        Tensor<T> dDecN1In;
+        decNorm1.backward(dNorm1Out, dDecN1In);
+
+        // Residual Sum: dTgtEmb = dDecRes1 + dDecN1In
+        Tensor<T> dTgtEmb(dDecRes1.shape);
+        for (std::size_t i = 0; i < dTgtEmb.size(); i++) {
+            dTgtEmb[i] = dDecRes1[i] + dDecN1In[i];
+        }
+
+        decEmb.backward(tgt, dTgtEmb);
+        // --- ENCODER BACKWARD ---
+        // Gradient from Cross Attn: dEncOut = dEncOutCross + dEncOutCrossK
+        Tensor<T> dEncOut(dEncOutCross.shape);
+        for (std::size_t i = 0; i < dEncOut.size(); i++) {
+            dEncOut[i] = dEncOutCross[i] + dEncOutCrossK[i];
+        }
+
+        // --- Encoder Layer 2: FF ---
+        Tensor<T> dEnorm2Out;
+        encFf.backward(dEncOut, dEnorm2Out);
+
+        Tensor<T> dEncN2In;
+        encNorm2.backward(dEnorm2Out, dEncN2In);
+
+        // Residual: dEncRes1 = dEncOut + dEncN2In
+        Tensor<T> dEncRes1(dEncOut.shape);
+        for (std::size_t i = 0; i < dEncRes1.size(); i++) {
+            dEncRes1[i] = dEncOut[i] + dEncN2In[i];
+        }
+
+        // --- Encoder Layer 1: Self Attn ---
+        Tensor<T> dEnorm1Out, dEsk, dEsv;
+        encAttn.backward(dEncRes1, dEnorm1Out, dEsk, dEsv);
+        for (std::size_t i = 0; i < dEnorm1Out.size(); i++) {
+            dEnorm1Out[i] += dEsk[i] + dEsv[i];
+        }
+
+        Tensor<T> dEncN1In;
+        encNorm1.backward(dEnorm1Out, dEncN1In);
+
+        // Residual: dSrcEmb = dEncRes1 + dEncN1In
+        Tensor<T> dSrcEmb(dEncRes1.shape);
+        for (std::size_t i = 0; i < dSrcEmb.size(); i++) {
+            dSrcEmb[i] = dEncRes1[i] + dEncN1In[i];
+        }
+
+        encEmb.backward(src, dSrcEmb);
+
+        // Update All: every layer applies its accumulated gradients. The big
+        // tables are updated by several threads.
+        encEmb.updateParallel(lr, rule, threads);
+        decEmb.updateParallel(lr, rule, threads);
+        encAttn.update(lr, rule);
+        decAttn1.update(lr, rule);
+        decAttn2.update(lr, rule);
+        ff.update(lr, rule);
+        encFf.update(lr, rule);
+        proj.updateParallel(lr, rule, threads);
+        encNorm1.update(lr, rule);
+        encNorm2.update(lr, rule);
+        decNorm1.update(lr, rule);
+        decNorm2.update(lr, rule);
         decNorm3.update(lr, rule);
 
         return loss;

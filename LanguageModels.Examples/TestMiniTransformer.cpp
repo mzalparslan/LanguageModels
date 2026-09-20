@@ -216,13 +216,14 @@ int testFraEngTranslation() {
             std::vector<std::size_t> decoderInput(tgtFull.begin(), tgtFull.end() - 1);
             std::vector<std::size_t> expectedIds(tgtFull.begin() + 1, tgtFull.end());
 
-            totalLoss += model.trainStep(src, decoderInput, expectedIds, learningRate, UpdateRule::adam(adamStep));
+            // totalLoss += model.trainStep(src, decoderInput, expectedIds, learningRate, UpdateRule::adam(adamStep));
+            totalLoss += model.trainStepMultipleThread(src, decoderInput, expectedIds, learningRate, UpdateRule::adam(adamStep), 4);
             adamStep++;
         }
 
         // Log the average per-sentence loss every 100 epochs.
-        if (epoch % 100 == 0) {
-            std::cout << "100 x Epoch Elapsed time: " << epochTimer.stop() << " ms" << std::endl;
+        if (epoch % 5 == 0) {
+            std::cout << "5 x Epoch Elapsed time: " << epochTimer.stop() << " ms" << std::endl;
             epochTimer.start();
 
             std::cout << "Epoch " << epoch << " Loss: " << totalLoss / trainData.size() << "\n";

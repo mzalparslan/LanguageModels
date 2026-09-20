@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
             return argument == "--help" ? 0 : 1;
         }
     }
-
+    /*
     runStage("Vanilla RNN", testVanilla);
     runStage("Simple Transformer", testSimpleSet);
     runStage("Mini Transformer", testFraEngTranslation);
@@ -59,6 +59,8 @@ int main(int argc, char* argv[]) {
     runStage("GPT with Unigram Tokenizer", testGPTWithUnigram);
     runStage("WordPiece Tokenizer", testWordPieceTokenizer);
     runStage("Tiny Shakespeare Benchmark", testTinyShakespeare);
+    */
+    runStage("Mini Transformer", testFraEngTranslation);
 
     return 0;
 }

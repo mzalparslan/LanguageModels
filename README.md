@@ -245,6 +245,14 @@ model.
 Adam (`UpdateRule::sgd()` / `UpdateRule::adam(step)`). Adam's moment buffers are
 allocated on first use, and gradients are clipped element-wise to [-1, 1].
 
+**Multi-threaded training step.** `MiniTransformer::trainStepMultipleThread()` is
+`trainStep()` with the vocabulary-sized work (output projection, softmax, and clearing
+and updating the embedding tables) split across `std::thread`s from a small shared
+`ThreadPool`. The tiny encoder and decoder layers stay on the calling thread. Every
+element is computed with the same operations in the same order, so the loss and the
+weights are bit-identical to `trainStep()` at any thread count. With a 3,000 / 5,000
+word vocabulary on a 16-thread desktop it ran about 4.5 times faster (Release build).
+
 **Errors are typed, not silent.** Invalid input throws instead of producing
 `NaN`s or crashing:
 
@@ -263,7 +271,7 @@ allocated on first use, and gradients are clipped element-wise to [-1, 1].
 ## Tests
 
 `LanguageModels.Tests` is a [Google Test](https://github.com/google/googletest)
-project with about 460 tests. There is one `*Tests.cpp` per library header, under
+project with about 500 tests. There is one `*Tests.cpp` per library header, under
 `unit/<folder>/`. They cover:
 
 - exact behavior: known matrix products, softmax values, RoPE angles, metrics formulas;

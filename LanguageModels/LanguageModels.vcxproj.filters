@@ -54,6 +54,9 @@
     <ClInclude Include="include\common\Parameter.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="include\common\ThreadPool.h">
+      <Filter>common</Filter>
+    </ClInclude>
     <ClInclude Include="include\common\TensorOps.h">
       <Filter>common</Filter>
     </ClInclude>
