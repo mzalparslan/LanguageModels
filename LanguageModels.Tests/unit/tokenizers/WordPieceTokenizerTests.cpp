@@ -194,7 +194,7 @@ TEST(WordPieceEncodeTest, EncodeBeforeLoadingAVocabularyThrowsInvalidSizeError) 
     EXPECT_THROW(tokenizer.encode("hello"), InvalidSizeError);
 }
 
-// ------------------------------------------------------------ encodeSequence
+// === encodeSequence
 
 TEST_F(WordPieceTokenizerTest, SingleSentenceIsWrappedInClsAndSep) {
     auto tokenizer = loadedTokenizer();

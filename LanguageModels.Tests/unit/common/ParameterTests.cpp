@@ -22,7 +22,7 @@ namespace {
     }
 }
 
-// --------------------------------------------------------------- UpdateRule
+// === UpdateRule ===
 
 TEST(UpdateRuleTest, DefaultIsSgd) {
     UpdateRule rule = UpdateRule::sgd();
@@ -41,7 +41,7 @@ TEST(UpdateRuleTest, AdamTimestepZeroThrowsInvalidParameterError) {
     EXPECT_THROW(UpdateRule::adam(0), InvalidParameterError);
 }
 
-// --------------------------------------------------------------------- init
+// === init ===
 
 TEST(ParameterTest, InitCreatesWeightsAndZeroGradients) {
     Parameter<double> parameter;
@@ -152,7 +152,7 @@ TEST(ParameterTest, InitDiscardsPreviousAdamMoments) {
     EXPECT_EQ(parameter.secondMoment.size(), 0u);
 }
 
-// --------------------------------------------------------------- initConstant
+// === initConstant ===
 
 TEST(ParameterTest, InitConstantFillsEveryWeight) {
     Parameter<double> parameter;
@@ -175,7 +175,7 @@ TEST(ParameterTest, InitConstantValidatesShapeAndFill) {
     EXPECT_THROW(parameter.initConstant({ 2 }, kInf), NonFiniteError);
 }
 
-// ------------------------------------------------------------------- zeroGrad
+// === zeroGrad ===
 
 TEST(ParameterTest, ZeroGradClearsGradientsButKeepsWeights) {
     Parameter<double> parameter = makeParameter({ 1.0, 2.0 }, { 0.5, -0.5 });
@@ -188,7 +188,7 @@ TEST(ParameterTest, ZeroGradClearsGradientsButKeepsWeights) {
     EXPECT_DOUBLE_EQ(parameter.value[1], 2.0);
 }
 
-// ------------------------------------------------------------------------ SGD
+// === SGD ===
 
 TEST(ParameterSgdTest, SubtractsLearningRateTimesGradient) {
     Parameter<double> parameter = makeParameter({ 1.0, -2.0 }, { 0.5, -0.25 });
@@ -228,7 +228,7 @@ TEST(ParameterSgdTest, ZeroGradientLeavesWeightsUnchanged) {
     EXPECT_DOUBLE_EQ(parameter.value[1], 2.0);
 }
 
-// ----------------------------------------------------------------------- Adam
+// === Adam ===
 
 TEST(ParameterAdamTest, FirstStepMovesAgainstTheGradientByAboutLearningRate) {
     // At t = 1 the bias-corrected moments are m_hat = g and v_hat = g^2, so
@@ -292,7 +292,7 @@ TEST(ParameterAdamTest, ConvergesOnAQuadraticBowl) {
     EXPECT_NEAR(parameter.value[0], 3.0, 1e-2);
 }
 
-// ----------------------------------------------------------------- validation
+// === validation ===
 
 TEST(ParameterUpdateTest, RejectsNonPositiveLearningRate) {
     Parameter<double> parameter = makeParameter({ 1.0 }, { 0.1 });

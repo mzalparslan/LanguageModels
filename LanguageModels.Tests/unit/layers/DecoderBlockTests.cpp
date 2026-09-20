@@ -69,7 +69,7 @@ namespace {
     }
 }
 
-// -------------------------------------------------------------------- concept
+// === concept
 
 TEST(DecoderBlockConceptTest, AllDecoderBlocksSatisfyTheConcept) {
     static_assert(DecoderBlock<BasicDecoderBlock<double>, double, FullWidthRope>);
@@ -92,7 +92,7 @@ TEST(DecoderBlockConceptTest, OnlyMultiHeadBlockReportsAnAuxiliaryLoss) {
     SUCCEED();
 }
 
-// ----------------------------------------------------------- BasicDecoderBlock
+// === BasicDecoderBlock
 
 TEST(BasicDecoderBlockTest, ForwardPreservesShape) {
     RandomEngine rng(42);
@@ -209,7 +209,7 @@ TEST(BasicDecoderBlockTest, UpdateChangesWeights) {
     EXPECT_FALSE(testsupport::tensorsEqual(block.norm1.weight.value, before));
 }
 
-// ------------------------------------------------------------- DecoderWithMoe
+// === DecoderWithMoe
 
 TEST(DecoderWithMoeTest, DenseModeOwnsFeedForwardOnly) {
     RandomEngine rng(42);
@@ -311,7 +311,7 @@ TEST(DecoderWithMoeTest, UpdateWorksInBothModes) {
     }
 }
 
-// ----------------------------------------------------------- DecoderMultiHead
+// === DecoderMultiHead
 
 TEST(DecoderMultiHeadTest, ForwardPreservesShapeInBothModes) {
     RandomEngine rng(42);

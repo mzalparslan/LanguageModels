@@ -7,7 +7,7 @@
 using testsupport::makeMatrix;
 using testsupport::tensorsNear;
 
-// ---------------------------------------------------------------- MatMul2D
+// MatMul2D
 
 TEST(MatMul2DTest, MultipliesKnownMatrices) {
     // [1 2 3]   [ 7  8]   [ 58  64]
@@ -83,7 +83,7 @@ TEST(MatMul2DTest, NonMatrixOperandsThrowInvalidSizeError) {
     EXPECT_THROW(MatMul2D(empty, matrix, C), InvalidSizeError);
 }
 
-// --------------------------------------------------------------- transpose2D
+// === transpose2D
 
 TEST(Transpose2DTest, SwapsRowsAndColumns) {
     auto A = makeMatrix(2, 3, { 1, 2, 3, 4, 5, 6 });
@@ -120,7 +120,7 @@ TEST(Transpose2DTest, NonMatrixThrowsInvalidSizeError) {
     EXPECT_THROW(transpose2D(vector, At), InvalidSizeError);
 }
 
-// ---------------------------------------------------------------- softmaxRow
+// === softmaxRow
 
 TEST(SoftmaxRowTest, EveryRowSumsToOneAndIsPositive) {
     auto mat = makeMatrix(2, 3, { 1, 2, 3, -1, 0, 5 });

@@ -53,7 +53,7 @@ TEST(DecoderOnlyModelTest, NamedModelsAreAliasesOfTheGenericTemplate) {
     SUCCEED();
 }
 
-// ---------------------------------------------------------------- construction
+// === construction
 
 TEST(DecoderOnlyModelTest, StoresItsConfiguration) {
     BasicGPT gpt(vocabSize, dModel, 3, maxLen);

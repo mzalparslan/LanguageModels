@@ -15,7 +15,7 @@ namespace {
     }
 }
 
-// --------------------------------------------------------------- construction
+// === construction
 
 TEST(UnigramTokenizerTest, TargetVocabularySizeIsStored) {
     UnigramTokenizer tokenizer(50);

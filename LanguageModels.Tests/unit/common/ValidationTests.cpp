@@ -8,7 +8,7 @@ namespace {
     const double kInf = std::numeric_limits<double>::infinity();
 }
 
-// ------------------------------------------------------------ requireFinite
+// === requireFinite
 
 TEST(ValidationTest, RequireFiniteAcceptsOrdinaryValues) {
     EXPECT_NO_THROW(validation::requireFinite(0.0, "x"));
@@ -61,7 +61,7 @@ TEST(ValidationTest, RequireAllFiniteScansEveryElement) {
     EXPECT_THROW(validation::requireAllFinite(hasInf, "tensor"), NonFiniteError);
 }
 
-// ----------------------------------------------- positive / non-negative floats
+// === positive / non-negative floats
 
 TEST(ValidationTest, RequirePositiveFiniteRejectsZeroAndNegative) {
     EXPECT_NO_THROW(validation::requirePositiveFinite(1e-12, "lr"));
@@ -82,7 +82,7 @@ TEST(ValidationTest, RequireNonNegativeFiniteAcceptsZero) {
     EXPECT_THROW(validation::requireNonNegativeFinite(-kInf, "scale"), NonFiniteError);
 }
 
-// ---------------------------------------------------------------- denominators
+// === denominators
 
 TEST(ValidationTest, RequireNonZeroDenominatorOnlyRejectsExactZero) {
     EXPECT_NO_THROW(validation::requireNonZeroDenominator(1e-300, "d"));
@@ -146,7 +146,7 @@ TEST(ValidationTest, RequireSameSizeRequiresEquality) {
     EXPECT_THROW(validation::requireSameSize(5, 4, "vector"), InvalidSizeError);
 }
 
-// ------------------------------------------------------------------- matrices
+// === matrices
 
 TEST(ValidationTest, RequireMatrixAcceptsOnlyNonEmpty2D) {
     EXPECT_NO_THROW(validation::requireMatrix(Tensor<double>({ 2, 3 }), "m"));

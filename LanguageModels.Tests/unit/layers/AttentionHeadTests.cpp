@@ -214,7 +214,7 @@ TEST(AttentionHeadRopeTest, RotationStillKeepsCausality) {
     }
 }
 
-// ------------------------------------------------------------------- backward
+// === backward
 
 TEST(AttentionHeadBackwardTest, BackwardBeforeForwardThrowsInvalidSizeError) {
     RandomEngine rng(42);
