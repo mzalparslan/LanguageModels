@@ -153,6 +153,11 @@
     <ClCompile Include="unit\layers\LinearLayerTests.cpp" />
     <ClCompile Include="unit\layers\MultiHeadAttentionTests.cpp" />
     <ClCompile Include="unit\metrics\MetricsTests.cpp" />
+    <ClCompile Include="unit\metrics\LogitMetricsTests.cpp" />
+    <ClCompile Include="unit\metrics\ConfusionMatrixTests.cpp" />
+    <ClCompile Include="unit\metrics\TextMetricsTests.cpp" />
+    <ClCompile Include="unit\metrics\NGramBaselineTests.cpp" />
+    <ClCompile Include="unit\metrics\TinyShakespeareTests.cpp" />
     <ClCompile Include="unit\models\BertModelTests.cpp" />
     <ClCompile Include="unit\models\DecoderOnlyModelTests.cpp" />
     <ClCompile Include="unit\models\MiniTransformerTests.cpp" />

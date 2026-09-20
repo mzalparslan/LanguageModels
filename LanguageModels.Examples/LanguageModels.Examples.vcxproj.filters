@@ -34,5 +34,8 @@
     <ClCompile Include="TestWordPieceTokenizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TestTinyShakespeare.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

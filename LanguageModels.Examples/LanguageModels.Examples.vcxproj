@@ -178,6 +178,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
     <ClCompile Include="TestSimpleTransformer.cpp" />
     <ClCompile Include="TestMiniTransformer.cpp" />
     <ClCompile Include="TestWordPieceTokenizer.cpp" />
+    <ClCompile Include="TestTinyShakespeare.cpp" />
   </ItemGroup>
   <ItemGroup>
     <!-- Not wired into the build: standalone draft, kept for reference. -->

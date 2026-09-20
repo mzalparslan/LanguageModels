@@ -13,9 +13,11 @@ int testBasicGPT();
 int testBasicGPTWithMoE();
 int testGPTWithUnigram();
 int testWordPieceTokenizer();
+int testTinyShakespeare();
 
 // When true (--quick), the Mini Transformer stage trains on the 100-pair
-// fra_debug.txt instead of the full fra.txt (a ~1.5-2hr run).
+// fra_debug.txt instead of the full fra.txt (a ~1.5-2hr run), and the Tiny
+// Shakespeare benchmark trains for fewer steps and scores less text.
 bool useQuickDataset = true;
 
 namespace {
@@ -42,7 +44,8 @@ int main(int argc, char* argv[]) {
         else {
             std::cout << "Usage: LanguageModels.Examples [--quick]\n"
                 << "  --quick  train the Mini Transformer on the 100-pair debug dataset\n"
-                << "           (fra_debug.txt) instead of the full fra.txt\n";
+                << "           (fra_debug.txt) instead of the full fra.txt, and shorten the\n"
+                << "           Tiny Shakespeare benchmark\n";
             return argument == "--help" ? 0 : 1;
         }
     }
@@ -55,6 +58,7 @@ int main(int argc, char* argv[]) {
     runStage("Basic GPT with Mixture of Experts", testBasicGPTWithMoE);
     runStage("GPT with Unigram Tokenizer", testGPTWithUnigram);
     runStage("WordPiece Tokenizer", testWordPieceTokenizer);
+    runStage("Tiny Shakespeare Benchmark", testTinyShakespeare);
 
     return 0;
 }

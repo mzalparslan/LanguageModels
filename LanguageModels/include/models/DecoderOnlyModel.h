@@ -10,6 +10,7 @@
 #include "Embedding.h"
 #include "RotaryEmbedding.h"
 #include "LinearLayer.h"
+#include "LogitMetrics.h"
 #include "RMSNorm.h"
 #include "ModelConfig.h"
 
@@ -207,6 +208,29 @@ public:
         validation::requireNonZeroDenominator(seq, "Sequence length");
         validation::requireFinite(totalAux, "MoE auxiliary loss");
         return (loss / seq) + totalAux;
+    }
+
+    /**
+     * @brief Scores model on a sequence without changing its weights: how well
+     * position i's output predicts token targets[i].
+     *
+     * For a text longer than the context length, score it in windows with
+     * evaluation::MetricsAccumulator and this model's forward().
+     *
+     * @param x Input token ids [seq].
+     * @param targets Expected next-token id for each position [seq].
+     * @return Loss, perplexity, next-token accuracy and bits per token.
+     * @throws InvalidSizeError If targets and x differ in length, or x is empty
+     * or longer than the context length.
+     * @throws InvalidParameterError If a token id is outside the vocabulary.
+     * @throws NonFiniteError If the loss is infinite.
+     */
+    Metrics evaluate(const std::vector<std::size_t>& x, const std::vector<std::size_t>& targets) {
+        validation::requireSameSize(targets.size(), x.size(), "Target sequence");
+
+        Tensor<T> logits;
+        forward(x, logits);
+        return evaluation::scoreLogits(logits, targets);
     }
 
     /**

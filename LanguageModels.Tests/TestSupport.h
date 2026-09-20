@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <sstream>
@@ -19,6 +21,37 @@
 #include "Tensor.h"
 
 namespace testsupport {
+
+	/**
+	 * @brief Reads a data file from the repository's resources/ folder.
+	 *
+	 * The tests run from different directories (the solution's bin folder under
+	 * Visual Studio, the repository root or build/ folder under make), so this
+	 * searches the working directory and each parent for resources/<name>, or
+	 * for <name> next to the executable.
+	 *
+	 * @return The file's bytes, or an empty string if it was not found.
+	 */
+	inline std::string readResource(const std::string& name) {
+		namespace fs = std::filesystem;
+
+		fs::path directory = fs::current_path();
+		for (int level = 0; level < 8; level++) {
+			for (const fs::path& candidate : { directory / "resources" / name, directory / name }) {
+				if (fs::is_regular_file(candidate)) {
+					std::ifstream file(candidate, std::ios::binary);
+					std::ostringstream contents;
+					contents << file.rdbuf();
+					return contents.str();
+				}
+			}
+			if (!directory.has_parent_path() || directory.parent_path() == directory) {
+				break;
+			}
+			directory = directory.parent_path();
+		}
+		return std::string();
+	}
 
 	/**
 	 * @brief Builds a [rows, cols] tensor from a row-major initializer list.

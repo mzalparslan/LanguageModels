@@ -30,6 +30,18 @@
     <ClInclude Include="include\metrics\Metrics.h">
       <Filter>metrics</Filter>
     </ClInclude>
+    <ClInclude Include="include\metrics\LogitMetrics.h">
+      <Filter>metrics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\metrics\ConfusionMatrix.h">
+      <Filter>metrics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\metrics\TextMetrics.h">
+      <Filter>metrics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\metrics\NGramBaseline.h">
+      <Filter>metrics</Filter>
+    </ClInclude>
     <ClInclude Include="include\common\Exceptions.h">
       <Filter>common</Filter>
     </ClInclude>

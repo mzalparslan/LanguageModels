@@ -156,6 +156,10 @@
     <ClInclude Include="include\tokenizers\WordPieceTokenizer.h" />
     <ClInclude Include="include\tokenizers\UnigramTokenizer.h" />
     <ClInclude Include="include\metrics\Metrics.h" />
+    <ClInclude Include="include\metrics\LogitMetrics.h" />
+    <ClInclude Include="include\metrics\ConfusionMatrix.h" />
+    <ClInclude Include="include\metrics\TextMetrics.h" />
+    <ClInclude Include="include\metrics\NGramBaseline.h" />
     <ClInclude Include="include\common\Exceptions.h" />
     <ClInclude Include="include\common\Validation.h" />
   </ItemGroup>

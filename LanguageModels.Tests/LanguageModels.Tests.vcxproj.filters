@@ -79,6 +79,21 @@
     <ClCompile Include="unit\metrics\MetricsTests.cpp">
       <Filter>unit\metrics</Filter>
     </ClCompile>
+    <ClCompile Include="unit\metrics\LogitMetricsTests.cpp">
+      <Filter>unit\metrics</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\metrics\ConfusionMatrixTests.cpp">
+      <Filter>unit\metrics</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\metrics\TextMetricsTests.cpp">
+      <Filter>unit\metrics</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\metrics\NGramBaselineTests.cpp">
+      <Filter>unit\metrics</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\metrics\TinyShakespeareTests.cpp">
+      <Filter>unit\metrics</Filter>
+    </ClCompile>
     <ClCompile Include="unit\models\BertModelTests.cpp">
       <Filter>unit\models</Filter>
     </ClCompile>

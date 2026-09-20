@@ -24,6 +24,7 @@ It is a sibling of the MachineLearningModels repository, which covers classical
 - [Repository layout](#repository-layout)
 - [Getting started](#getting-started)
 - [Using the library](#using-the-library)
+- [Measuring model quality](#measuring-model-quality)
 - [Design notes](#design-notes)
 - [Tests](#tests)
 - [Data files](#data-files)
@@ -48,6 +49,7 @@ Paths are relative to `LanguageModels/include/` for headers and to
 | GPT (decoder-only) | `models/DecoderOnlyModel.h`, `models/BasicGPT.h`, `layers/BasicDecoderBlock.h` | `TestBasicGPT.cpp` |
 | Mixture of Experts | `models/MoELayer.h`, `layers/DecoderWithMoe.h`, `models/BasicGPTWithMoE.h` | `TestBasicGPTWithMoE.cpp` |
 | Unigram tokenizer + GPT | `models/BasicGPTWithMoE.h` (`GPTWithUnigram`) | `TestGPTWithUnigram.cpp` |
+| Evaluation (perplexity, BLEU, ROUGE, F1, baselines) | `metrics/` | `TestTinyShakespeare.cpp` |
 
 Shared infrastructure:
 
@@ -112,9 +114,10 @@ make clean
 
 `LanguageModels.Examples` runs every course stage in order: Vanilla RNN,
 Simple Transformer, Mini Transformer, BERT, Basic GPT, Basic GPT with Mixture of
-Experts, GPT with Unigram tokenizer, and WordPiece tokenizer. Each stage prints
-its loss as it trains and a small inference demo at the end. A stage that throws
-is reported and the next one still runs.
+Experts, GPT with Unigram tokenizer, WordPiece tokenizer, and the Tiny Shakespeare
+benchmark (see [Measuring model quality](#measuring-model-quality)). Each stage
+prints its loss as it trains and a small inference demo at the end. A stage that
+throws is reported and the next one still runs.
 
 The **Mini Transformer** stage trains an English to French model on up to 5000
 sentence pairs from `fra.txt`, which takes hours (about 20 s per epoch for 500
@@ -183,6 +186,43 @@ int main() {
 The `LanguageModels.Examples/` drivers show complete training loops for every
 model, including tokenization and evaluation.
 
+## Measuring model quality
+
+`include/metrics/` scores models independently of how they are built, so any two
+models can be compared on the same footing:
+
+| Header | What it measures | Typical use |
+|---|---|---|
+| `Metrics.h` | loss, perplexity, next-token accuracy, bits per token | result type of `VanillaRNN::evaluate` and `DecoderOnlyModel::evaluate` |
+| `LogitMetrics.h` | the same, straight from a `[rows, vocab]` logits tensor (`scoreLogits`, and `MetricsAccumulator` to pool many windows); `topKAccuracy` | GPT, Mini Transformer, BERT's masked-LM head |
+| `ConfusionMatrix.h` | accuracy, per-class and macro precision, recall and F1 | classification heads such as BERT's next-sentence prediction |
+| `TextMetrics.h` | BLEU (sentence and corpus), ROUGE-1/2/L, edit distance, word and character error rate | translation and generation quality |
+| `NGramBaseline.h` | unigram and bigram language models | a yardstick a trained model has to beat |
+
+```cpp
+// Perplexity of a decoder-only model on one window of text.
+Metrics metrics = gpt.evaluate(input, target);
+std::cout << "perplexity " << metrics.perplexity << "\n";
+
+// Translation quality of generated sentences against references.
+auto score = evaluation::corpusBleu(candidates, references);   // BLEU-4
+```
+
+**Checking that the numbers are right.** Perplexity means little alone, so the
+tests pin the metrics to values that can be worked out independently:
+
+- BLEU is checked on the worked examples from the original paper (Papineni et al.,
+  2002), for instance modified precisions of 17/18 and 10/17 for its good candidate.
+- Edit distance, F1 and ROUGE use textbook examples (`kitten` to `sitting` is 3 edits).
+- **Tiny Shakespeare**, the standard small character-level benchmark, has a published
+  size (1,115,394 characters, 65 distinct). Its baselines follow from counting: a
+  uniform guess has perplexity 65, letter frequencies give 27.5 (4.78 bits per
+  character), and one character of context gives 11.6. The tests compare
+  `NGramBaseline` with values from an independent Python implementation, and check
+  that a character RNN trained for a few hundred steps scores well below 65 on text
+  it has not seen. The `Tiny Shakespeare Benchmark` example stage trains the RNN
+  longer and prints all of these side by side (`--quick` shortens it).
+
 ## Design notes
 
 **One decoder-only model, several blocks.** `DecoderOnlyModel<T, BlockT, Config>`
@@ -223,7 +263,7 @@ allocated on first use, and gradients are clipped element-wise to [-1, 1].
 ## Tests
 
 `LanguageModels.Tests` is a [Google Test](https://github.com/google/googletest)
-project with about 390 tests. There is one `*Tests.cpp` per library header, under
+project with about 460 tests. There is one `*Tests.cpp` per library header, under
 `unit/<folder>/`. They cover:
 
 - exact behavior: known matrix products, softmax values, RoPE angles, metrics formulas;
@@ -253,6 +293,7 @@ Run them:
 | `vocab_test.txt` | yes | the WordPiece tokenizer stage |
 | `fra_debug.txt` | yes (100 sentence pairs) | the Mini Transformer stage with `--quick` |
 | `fra.txt` | **no** (about 36 MB) | the Mini Transformer stage by default |
+| `tinyshakespeare.txt` | yes (1.1 MB) | the Tiny Shakespeare benchmark stage and its tests |
 
 `fra.txt` is a tab-separated English to French sentence-pair file (English, French
 and an optional attribution column per line), the format of the Tatoeba-derived
@@ -267,6 +308,11 @@ project, licensed [CC BY 2.0 (France)](https://creativecommons.org/licenses/by/2
 Each line keeps its attribution column (`Attribution: tatoeba.org #<sentence ids>`), so
 the credit travels with the data. The code in this repository is under the MIT license
 below; the Tatoeba data keeps its own license.
+
+`tinyshakespeare.txt` is the Tiny Shakespeare text distributed with Andrej Karpathy's
+[char-rnn](https://github.com/karpathy/char-rnn) project (`data/tinyshakespeare/input.txt`),
+a concatenation of Shakespeare's plays, whose text is in the public domain. The char-rnn
+repository does not state a license for the compiled file.
 
 ## Known limitations
 
