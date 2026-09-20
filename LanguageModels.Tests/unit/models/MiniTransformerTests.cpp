@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "LogitMetrics.h"
 #include "MiniTransformer.h"
 #include "TestSupport.h"
 #include <cmath>
@@ -158,4 +159,132 @@ TEST(MiniTransformerTest, TrainStepWorksWithPlainSgdToo) {
     MiniTransformer<double> model(sourceVocab, targetVocab);
 
     EXPECT_NO_THROW(model.trainStep(source, decoderInput, expectedOutput, 0.01, UpdateRule::sgd()));
+}
+
+// === decoding
+//
+// The toy pair above reads as: start token 1, then 2 3 4 5, then end token 0.
+
+namespace {
+    const std::size_t startToken = 1;
+    const std::size_t endToken = 0;
+    const std::vector<std::size_t> learnedTranslation = { 1, 2, 3, 4, 5, 0 };
+
+    MiniTransformer<double> trainedModel() {
+        MiniTransformer<double> model(sourceVocab, targetVocab);
+        for (std::size_t step = 1; step <= 150; step++) {
+            (void)model.trainStep(source, decoderInput, expectedOutput, 0.005, UpdateRule::adam(step));
+        }
+        return model;
+    }
+}
+
+TEST(MiniTransformerDecodingTest, GreedyDecodingFollowsTheArgMaxOfForward) {
+    MiniTransformer<double> model(sourceVocab, targetVocab);
+
+    // Reference: the same loop written out with forward().
+    std::vector<std::size_t> expected = { startToken };
+    for (int step = 0; step < 6; step++) {
+        Tensor<double> logits;
+        model.forward(source, expected, logits);
+        const double* lastRow = &logits.data[(logits.shape[0] - 1) * targetVocab];
+        std::size_t best = 0;
+        for (std::size_t j = 1; j < targetVocab; j++) {
+            if (lastRow[j] > lastRow[best]) {
+                best = j;
+            }
+        }
+        expected.push_back(best);
+        if (best == endToken) {
+            break;
+        }
+    }
+
+    EXPECT_EQ(model.generate(source, startToken, endToken, 6), expected);
+}
+
+TEST(MiniTransformerDecodingTest, TrainedModelGeneratesItsTranslationAndStopsAtTheEndToken) {
+    MiniTransformer<double> model = trainedModel();
+
+    EXPECT_EQ(model.generate(source, startToken, endToken, 10), learnedTranslation);
+}
+
+TEST(MiniTransformerDecodingTest, GenerationStopsAfterMaxNewTokensWhenNoEndTokenComes) {
+    MiniTransformer<double> model = trainedModel();
+
+    // Cut short after three new tokens: 1 2 3 4, no end token yet.
+    EXPECT_EQ(model.generate(source, startToken, endToken, 3), (std::vector<std::size_t>{ 1, 2, 3, 4 }));
+}
+
+TEST(MiniTransformerDecodingTest, ZeroNewTokensReturnsOnlyTheStartToken) {
+    MiniTransformer<double> model(sourceVocab, targetVocab);
+
+    EXPECT_EQ(model.generate(source, startToken, endToken, 0), (std::vector<std::size_t>{ startToken }));
+    auto hypothesis = model.beamSearch(source, startToken, endToken, 0, 3);
+    EXPECT_EQ(hypothesis.tokens, (std::vector<std::size_t>{ startToken }));
+    EXPECT_FALSE(hypothesis.finished);
+    EXPECT_DOUBLE_EQ(hypothesis.logProbability, 0.0);
+}
+
+TEST(MiniTransformerDecodingTest, DecodingDoesNotChangeTheModel) {
+    MiniTransformer<double> model = trainedModel();
+
+    auto first = model.generate(source, startToken, endToken, 10);
+    auto second = model.generate(source, startToken, endToken, 10);
+
+    EXPECT_EQ(first, second);
+}
+
+TEST(MiniTransformerDecodingTest, BeamSearchFindsTheLearnedTranslation) {
+    MiniTransformer<double> model = trainedModel();
+
+    auto hypothesis = model.beamSearch(source, startToken, endToken, 10, 3);
+
+    EXPECT_EQ(hypothesis.tokens, learnedTranslation);
+    EXPECT_TRUE(hypothesis.finished);
+    // A trained model is confident: the whole sentence is close to probability 1.
+    EXPECT_LE(hypothesis.logProbability, 0.0);
+    EXPECT_GT(hypothesis.logProbability, -1.0);
+}
+
+TEST(MiniTransformerDecodingTest, BeamOfWidthOneIsGreedyDecoding) {
+    MiniTransformer<double> untrained(sourceVocab, targetVocab);
+    MiniTransformer<double> trained = trainedModel();
+
+    EXPECT_EQ(untrained.beamSearch(source, startToken, endToken, 6, 1).tokens,
+        untrained.generate(source, startToken, endToken, 6));
+    EXPECT_EQ(trained.beamSearch(source, startToken, endToken, 10, 1).tokens,
+        trained.generate(source, startToken, endToken, 10));
+}
+
+TEST(MiniTransformerDecodingTest, BeamScoreIsTheSumOfTheTokenLogProbabilities) {
+    MiniTransformer<double> model(sourceVocab, targetVocab);
+
+    auto hypothesis = model.beamSearch(source, startToken, endToken, 4, 3);
+
+    // Score the returned tokens independently: the decoder reads every token but
+    // the last and must predict every token but the first.
+    std::vector<std::size_t> input(hypothesis.tokens.begin(), hypothesis.tokens.end() - 1);
+    std::vector<std::size_t> targets(hypothesis.tokens.begin() + 1, hypothesis.tokens.end());
+    Tensor<double> logits;
+    model.forward(source, input, logits);
+    Metrics metrics = evaluation::scoreLogits(logits, targets);
+
+    EXPECT_NEAR(hypothesis.logProbability, -metrics.loss * static_cast<double>(targets.size()), 1e-9);
+}
+
+TEST(MiniTransformerDecodingTest, RejectsInvalidArguments) {
+    MiniTransformer<double> model(sourceVocab, targetVocab);
+
+    EXPECT_THROW(model.generate({}, startToken, endToken, 3), InvalidSizeError);
+    EXPECT_THROW(model.beamSearch({}, startToken, endToken, 3, 2), InvalidSizeError);
+    // The decoder sees at most MiniTransformerConfig::maxSeqLen tokens.
+    EXPECT_THROW(model.generate(source, startToken, endToken, MiniTransformerConfig::maxSeqLen + 1), InvalidSizeError);
+    EXPECT_THROW(model.beamSearch(source, startToken, endToken, MiniTransformerConfig::maxSeqLen + 1, 2), InvalidSizeError);
+    EXPECT_THROW(model.beamSearch(source, startToken, endToken, 3, 0), InvalidParameterSizeError);
+    // Token ids must be target-vocabulary ids.
+    EXPECT_THROW(model.generate(source, targetVocab, endToken, 3), InvalidParameterError);
+    EXPECT_THROW(model.generate(source, startToken, targetVocab, 3), InvalidParameterError);
+    EXPECT_THROW(model.beamSearch(source, startToken, targetVocab, 3, 2), InvalidParameterError);
+    EXPECT_THROW(model.generate({ sourceVocab }, startToken, endToken, 3), InvalidParameterError);
 }

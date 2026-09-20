@@ -43,7 +43,7 @@ Paths are relative to `LanguageModels/include/` for headers and to
 | Attention | `layers/AttentionHead.h`, `layers/MultiHeadAttention.h` | |
 | Embeddings (learned, sinusoidal, rotary/RoPE) | `embeddings/Embedding.h`, `embeddings/SinusoidalEmbedding.h`, `embeddings/RotaryEmbedding.h` | |
 | Transformer building blocks | `layers/LinearLayer.h`, `layers/FeedForward.h`, `normalizations/RMSNorm.h` | |
-| Encoder-decoder transformer (translation) | `models/MiniTransformer.h` | `TestSimpleTransformer.cpp`, `TestMiniTransformer.cpp` |
+| Encoder-decoder transformer (translation), with greedy and beam-search decoding | `models/MiniTransformer.h` (`generate()`, `beamSearch()`) | `TestSimpleTransformer.cpp`, `TestMiniTransformer.cpp` |
 | Tokenizers (WordPiece, Unigram) | `tokenizers/WordPieceTokenizer.h`, `tokenizers/UnigramTokenizer.h` | `TestWordPieceTokenizer.cpp` |
 | BERT (encoder-only, masked LM + next-sentence) | `models/BERT.h`, `models/BertLayer.h` | `TestBert.cpp` |
 | GPT (decoder-only) | `models/DecoderOnlyModel.h`, `models/BasicGPT.h`, `layers/BasicDecoderBlock.h` | `TestBasicGPT.cpp` |

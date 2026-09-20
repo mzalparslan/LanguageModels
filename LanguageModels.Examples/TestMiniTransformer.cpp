@@ -231,135 +231,35 @@ int testFraEngTranslation() {
     // Ignore last batch's benchmark.
     (void)epochTimer.stop();
     
+    // Decoding lives in the model and works on token ids; the tokenizer only
+    // supplies the ids of the start and end words and turns ids back into text.
+    const std::size_t startId = decoderTokenizer.wordToId["<SOS>"];
+    const std::size_t endId = decoderTokenizer.wordToId["<EOS>"];
+    const std::size_t maxNewWords = 10;
+
     // Greedy decoding: start from <SOS> and repeatedly append single
     // most likely next word until <EOS> or 10 words.
     std::cout << "\n--- Greedy Inference ---\n";
     for (auto& sentencePair : testData) {
         std::cout << "Src: " << sentencePair.first << " -> ";
         std::vector<std::size_t> src = encoderTokenizer.encode(sentencePair.first);
-        std::vector<std::size_t> tgt = { (std::size_t)decoderTokenizer.wordToId["<SOS>"] };
-
-        for (std::size_t decodeStep = 0; decodeStep < 10; ++decodeStep) {
-            Tensor<double> logits;
-            model.forward(src, tgt, logits);
-
-            std::size_t seqLen = logits.shape[0];
-            std::size_t outputVocabSize = logits.shape[1];
-            std::size_t bestId = 0;
-            // Arg-max over the last position: its scores rank every possible next word.
-            double bestScore = -1e9;
-            for (std::size_t wordId = 0; wordId < outputVocabSize; wordId++) {
-                double score = logits.data[(seqLen - 1) * outputVocabSize + wordId];
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestId = wordId;
-                }
-            }
-
-            if (decoderTokenizer.idToWord[bestId] == "<EOS>") {
-                break;
-            }
-            tgt.push_back(bestId);
-        }
-        std::cout << decoderTokenizer.decode(tgt) << "\n";
+        std::cout << decoderTokenizer.decode(model.generate(src, startId, endId, maxNewWords)) << "\n";
     }
 
     // 6. Beam Search Inference: instead of committing to single best word
     // at each step, keep K best partial translations (ranked by summed log
     // probability) and extend all of them, which can find better full sentences.
     std::cout << "\n--- Beam Search (K=3) ---\n";
-    class BeamCandidate {
-    public:
-        std::vector<std::size_t> sequence = {};
-        double score = 0;
-        bool finished = false;
-    };
 
     // Number of hypotheses kept alive at every step.
-    std::size_t beamWidth = 3;
+    const std::size_t beamWidth = 3;
 
     for (auto& sentencePair : testData) {
         std::cout << "Src: " << sentencePair.first << " -> ";
         std::vector<std::size_t> src = encoderTokenizer.encode(sentencePair.first);
 
-        // Init Beam: a single hypothesis containing only <SOS>.
-        std::vector<BeamCandidate> beams;
-        beams.push_back({ {(std::size_t)decoderTokenizer.wordToId["<SOS>"]}, 0.0, false });
-
-        for (int step = 0; step < 10; ++step) {
-            std::vector<BeamCandidate> nextBeams;
-
-            for (auto& beam : beams) {
-                if (beam.finished) {
-                    nextBeams.push_back(beam);
-                    continue;
-                }
-
-                Tensor<double> logits;
-                model.forward(src, beam.sequence, logits);
-
-                std::size_t seqLen = logits.shape[0];
-                std::size_t outputVocabSize = logits.shape[1];
-
-                // Softmax on last token: turn its logits into log probabilities
-                // (with max subtracted first for numerical stability).
-                double maxLogit = -1e9;
-                std::size_t lastRowStart = (seqLen - 1) * outputVocabSize;
-                for (std::size_t wordId = 0; wordId < outputVocabSize; wordId++) {
-                    maxLogit = std::max(maxLogit, logits.data[lastRowStart + wordId]);
-                }
-
-                double sum = 0;
-                std::vector<double> logProbs(outputVocabSize);
-                for (std::size_t wordId = 0; wordId < outputVocabSize; wordId++) {
-                    double expValue = std::exp(logits.data[lastRowStart + wordId] - maxLogit);
-                    sum += expValue;
-                    logProbs[wordId] = expValue; // holds exp() until normalized below
-                }
-
-                for (std::size_t wordId = 0; wordId < outputVocabSize; wordId++) {
-                    logProbs[wordId] = std::log(logProbs[wordId] / sum);
-                }
-
-                // Expand: extend this hypothesis with every possible next word.
-                // (The pruning below keeps only the beamWidth best overall.)
-                for (std::size_t wordId = 0; wordId < outputVocabSize; wordId++) {
-                    BeamCandidate newBeam = beam;
-                    newBeam.sequence.push_back(wordId);
-                    newBeam.score += logProbs[wordId];
-                    if (decoderTokenizer.idToWord[wordId] == "<EOS>") {
-                        newBeam.finished = true;
-                    }
-                    nextBeams.push_back(newBeam);
-                }
-            }
-
-            // Prune: keep only the beamWidth highest-scoring hypotheses.
-            std::sort(nextBeams.begin(), nextBeams.end(),
-                [](const BeamCandidate& left, const BeamCandidate& right) {
-                return left.score > right.score; // Descending
-                });
-
-            if (nextBeams.size() > beamWidth) {
-                nextBeams.resize(beamWidth);
-            }
-            beams = nextBeams;
-
-            // Stop early once every kept hypothesis has produced <EOS>.
-            bool allFinished = true;
-            for (auto& beam : beams) {
-                if (!beam.finished) {
-                    allFinished = false;
-                }
-            }
-            if (allFinished) {
-                break;
-            }
-        }
-
-        if (!beams.empty()) {
-            std::cout << decoderTokenizer.decode(beams[0].sequence) << " (score: " << beams[0].score << ")\n";
-        }
+        auto best = model.beamSearch(src, startId, endId, maxNewWords, beamWidth);
+        std::cout << decoderTokenizer.decode(best.tokens) << " (score: " << best.logProbability << ")\n";
     }
     
     return 0;

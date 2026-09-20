@@ -1,5 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 #include "FeedForward.h"
 #include "AttentionHead.h"
 #include "RMSNorm.h"
@@ -389,7 +393,177 @@ public:
         return loss;
     }
 
+    /**
+     * @brief One translation, finished or still being extended: its token ids
+     * and how likely the model thinks it is.
+     */
+    class Hypothesis {
+    public:
+        // Token ids: begins with the start token, and ends with the end token
+        // if one was produced.
+        std::vector<std::size_t> tokens;
+        // Sum of ln p(token | earlier tokens) over every token after the start token.
+        T logProbability = T(0);
+        // True once the end token was produced.
+        bool finished = false;
+    };
+
+    /**
+     * @brief Greedy decoding: starts from the start token and repeatedly
+     * appends the single most likely next token, until the end token or
+     * maxNewTokens tokens.
+     *
+     * Works on token ids only; mapping words to ids (and finding the ids of the
+     * start and end tokens) is the caller's tokenizer's job.
+     *
+     * @param src Source token ids.
+     * @param startId Target token that begins a sentence (e.g. <SOS>).
+     * @param endId Target token that ends a sentence (e.g. <EOS>).
+     * @param maxNewTokens Most tokens to generate after the start token.
+     * @return The start token followed by the generated tokens, ending with
+     * endId if the model produced it.
+     * @throws InvalidSizeError If src is empty, or maxNewTokens exceeds
+     * MiniTransformerConfig::maxSeqLen.
+     * @throws InvalidParameterError If startId or endId is outside the target vocabulary.
+     */
+    std::vector<std::size_t> generate(const std::vector<std::size_t>& src, std::size_t startId,
+        std::size_t endId, std::size_t maxNewTokens) {
+        requireDecodableLength(src, maxNewTokens);
+
+        std::vector<std::size_t> tokens = { startId };
+        for (std::size_t step = 0; step < maxNewTokens; step++) {
+            Tensor<T> logits;
+            forward(src, tokens, logits);
+
+            const std::size_t vocab = logits.shape[1];
+            validation::requireBelow(endId, vocab, "End token id");
+
+            // Arg-max over the last position: its scores rank every possible next token.
+            const T* lastRow = &logits.data[(logits.shape[0] - 1) * vocab];
+            std::size_t best = 0;
+            for (std::size_t tokenId = 1; tokenId < vocab; tokenId++) {
+                if (lastRow[tokenId] > lastRow[best]) {
+                    best = tokenId;
+                }
+            }
+
+            tokens.push_back(best);
+            if (best == endId) {
+                break;
+            }
+        }
+        return tokens;
+    }
+
+    /**
+     * @brief Beam search: instead of committing to the single best token at
+     * each step, keeps the beamWidth best partial translations (ranked by
+     * summed log probability) and extends all of them, which can find better
+     * whole sentences than greedy decoding. A width of 1 is greedy decoding.
+     *
+     * @param src Source token ids.
+     * @param startId Target token that begins a sentence (e.g. <SOS>).
+     * @param endId Target token that ends a sentence (e.g. <EOS>).
+     * @param maxNewTokens Most tokens to generate after the start token.
+     * @param beamWidth Number of hypotheses kept alive at every step.
+     * @return The highest-scoring hypothesis found.
+     * @throws InvalidSizeError If src is empty, or maxNewTokens exceeds
+     * MiniTransformerConfig::maxSeqLen.
+     * @throws InvalidParameterSizeError If beamWidth is zero.
+     * @throws InvalidParameterError If startId or endId is outside the target vocabulary.
+     */
+    Hypothesis beamSearch(const std::vector<std::size_t>& src, std::size_t startId,
+        std::size_t endId, std::size_t maxNewTokens, std::size_t beamWidth) {
+        requireDecodableLength(src, maxNewTokens);
+        validation::requirePositiveSize(beamWidth, "Beam width");
+
+        // Init beam: a single hypothesis containing only the start token.
+        std::vector<Hypothesis> beams(1);
+        beams[0].tokens = { startId };
+
+        for (std::size_t step = 0; step < maxNewTokens; step++) {
+            std::vector<Hypothesis> nextBeams;
+
+            for (const Hypothesis& beam : beams) {
+                if (beam.finished) {
+                    nextBeams.push_back(beam);
+                    continue;
+                }
+
+                Tensor<T> logits;
+                forward(src, beam.tokens, logits);
+
+                const std::size_t vocab = logits.shape[1];
+                validation::requireBelow(endId, vocab, "End token id");
+
+                // Softmax on last position: turn its logits into log probabilities
+                // (with max subtracted first for numerical stability).
+                const std::size_t lastRowStart = (logits.shape[0] - 1) * vocab;
+                T maxLogit = T(-1e9);
+                for (std::size_t tokenId = 0; tokenId < vocab; tokenId++) {
+                    maxLogit = std::max(maxLogit, logits.data[lastRowStart + tokenId]);
+                }
+
+                T sum = T(0);
+                std::vector<T> logProbs(vocab);
+                for (std::size_t tokenId = 0; tokenId < vocab; tokenId++) {
+                    T expValue = std::exp(logits.data[lastRowStart + tokenId] - maxLogit);
+                    sum += expValue;
+                    logProbs[tokenId] = expValue; // holds exp() until normalized below
+                }
+                for (std::size_t tokenId = 0; tokenId < vocab; tokenId++) {
+                    logProbs[tokenId] = std::log(logProbs[tokenId] / sum);
+                }
+
+                // Expand: extend this hypothesis with every possible next token.
+                // (The pruning below keeps only the beamWidth best overall.)
+                for (std::size_t tokenId = 0; tokenId < vocab; tokenId++) {
+                    Hypothesis extended = beam;
+                    extended.tokens.push_back(tokenId);
+                    extended.logProbability += logProbs[tokenId];
+                    if (tokenId == endId) {
+                        extended.finished = true;
+                    }
+                    nextBeams.push_back(extended);
+                }
+            }
+
+            // Prune: keep only the beamWidth highest-scoring hypotheses.
+            std::sort(nextBeams.begin(), nextBeams.end(),
+                [](const Hypothesis& left, const Hypothesis& right) {
+                    return left.logProbability > right.logProbability; // Descending
+                });
+            if (nextBeams.size() > beamWidth) {
+                nextBeams.resize(beamWidth);
+            }
+            beams = nextBeams;
+
+            // Stop early once every kept hypothesis has produced the end token.
+            bool allFinished = true;
+            for (const Hypothesis& beam : beams) {
+                if (!beam.finished) {
+                    allFinished = false;
+                }
+            }
+            if (allFinished) {
+                break;
+            }
+        }
+
+        return beams[0];
+    }
+
 private:
+    /**
+     * @brief Shared argument checks of generate() and beamSearch().
+     */
+    void requireDecodableLength(const std::vector<std::size_t>& src, std::size_t maxNewTokens) const {
+        validation::requireNonEmpty(src.size(), "Source token sequence");
+        // The last decoder pass sees the start token plus all but the final new token.
+        validation::requireAtMost(maxNewTokens, MiniTransformerConfig::maxSeqLen,
+            "Number of generated tokens");
+    }
+
     FeedForward<T> encFf;  ///< Encoder FF
     LinearLayer<T> proj; ///< To Vocab
 };
