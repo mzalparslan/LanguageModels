@@ -127,6 +127,7 @@
   <ItemGroup>
     <ClInclude Include="include\common\Tensor.h" />
     <ClInclude Include="include\common\Parameter.h" />
+    <ClInclude Include="include\common\ThreadPool.h" />
     <ClInclude Include="include\common\TensorOps.h" />
     <ClInclude Include="include\common\BenchmarkTimer.h" />
     <ClInclude Include="include\config\ModelConfig.h" />

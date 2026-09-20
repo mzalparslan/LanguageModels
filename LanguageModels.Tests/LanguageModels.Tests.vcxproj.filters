@@ -40,6 +40,12 @@
     <ClCompile Include="unit\common\ParameterTests.cpp">
       <Filter>unit\common</Filter>
     </ClCompile>
+    <ClCompile Include="unit\common\ParameterParallelTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\common\ThreadPoolTests.cpp">
+      <Filter>unit\common</Filter>
+    </ClCompile>
     <ClCompile Include="unit\common\TensorOpsTests.cpp">
       <Filter>unit\common</Filter>
     </ClCompile>
@@ -73,6 +79,9 @@
     <ClCompile Include="unit\layers\LinearLayerTests.cpp">
       <Filter>unit\layers</Filter>
     </ClCompile>
+    <ClCompile Include="unit\layers\LinearLayerParallelTests.cpp">
+      <Filter>unit\layers</Filter>
+    </ClCompile>
     <ClCompile Include="unit\layers\MultiHeadAttentionTests.cpp">
       <Filter>unit\layers</Filter>
     </ClCompile>
@@ -101,6 +110,9 @@
       <Filter>unit\models</Filter>
     </ClCompile>
     <ClCompile Include="unit\models\MiniTransformerTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\models\MiniTransformerThreadingTests.cpp">
       <Filter>unit\models</Filter>
     </ClCompile>
     <ClCompile Include="unit\models\MoELayerTests.cpp">

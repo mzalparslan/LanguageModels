@@ -140,6 +140,8 @@
     <ClCompile Include="unit\common\BenchmarkTimerTests.cpp" />
     <ClCompile Include="unit\common\ExceptionsTests.cpp" />
     <ClCompile Include="unit\common\ParameterTests.cpp" />
+    <ClCompile Include="unit\common\ParameterParallelTests.cpp" />
+    <ClCompile Include="unit\common\ThreadPoolTests.cpp" />
     <ClCompile Include="unit\common\TensorOpsTests.cpp" />
     <ClCompile Include="unit\common\TensorTests.cpp" />
     <ClCompile Include="unit\common\ValidationTests.cpp" />
@@ -151,6 +153,7 @@
     <ClCompile Include="unit\layers\DecoderBlockTests.cpp" />
     <ClCompile Include="unit\layers\FeedForwardTests.cpp" />
     <ClCompile Include="unit\layers\LinearLayerTests.cpp" />
+    <ClCompile Include="unit\layers\LinearLayerParallelTests.cpp" />
     <ClCompile Include="unit\layers\MultiHeadAttentionTests.cpp" />
     <ClCompile Include="unit\metrics\MetricsTests.cpp" />
     <ClCompile Include="unit\metrics\LogitMetricsTests.cpp" />
@@ -161,6 +164,7 @@
     <ClCompile Include="unit\models\BertModelTests.cpp" />
     <ClCompile Include="unit\models\DecoderOnlyModelTests.cpp" />
     <ClCompile Include="unit\models\MiniTransformerTests.cpp" />
+    <ClCompile Include="unit\models\MiniTransformerThreadingTests.cpp" />
     <ClCompile Include="unit\models\MoELayerTests.cpp" />
     <ClCompile Include="unit\models\VanillaRNNTests.cpp" />
     <ClCompile Include="unit\normalizations\RMSNormTests.cpp" />
