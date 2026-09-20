@@ -18,7 +18,7 @@ int testTinyShakespeare();
 // When true (--quick), the Mini Transformer stage trains on the 100-pair
 // fra_debug.txt instead of the full fra.txt (a ~1.5-2hr run), and the Tiny
 // Shakespeare benchmark trains for fewer steps and scores less text.
-bool useQuickDataset = true;
+bool useQuickDataset = false;
 
 namespace {
 // A stage throwing (or hitting an access violation) shouldn't take out
