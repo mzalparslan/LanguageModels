@@ -59,7 +59,7 @@ TEST(NGramBaselineTest, UnigramOverEqualFrequenciesHasPerplexityEqualToTheAlphab
     Metrics metrics = baseline.evaluate({ 0, 0, 1, 1 });
 
     EXPECT_NEAR(metrics.perplexity, 2.0, 1e-12);
-    // Three predictions (0->0, 0->1, 1->1); "0" is predicted, so only the first is right.
+    // Three predictions (0->0, 0->1, 1->1); "0" is predicted, so only first is right.
     EXPECT_DOUBLE_EQ(metrics.accuracy, 1.0 / 3.0);
 }
 

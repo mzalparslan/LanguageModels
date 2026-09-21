@@ -6,7 +6,7 @@
 #include <fstream>
 
 namespace {
-    // Vocabulary in file order, so the ids are the indices.
+    // Vocabulary in file order, so ids are indices.
     const std::vector<std::string> vocabularyLines = {
         "[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]",   // 0..4
         "hello", "world", "play", "##ing", "##s", "un", "##able"   // 5..11
@@ -20,7 +20,7 @@ namespace {
     using Ids = std::vector<std::size_t>;
 }
 
-// Writes the vocabulary to a temporary file the tests load, and removes it afterwards.
+// Writes vocabulary to a temporary file tests load, and removes it afterwards.
 class WordPieceTokenizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -156,7 +156,7 @@ TEST_F(WordPieceTokenizerTest, WordThatCannotBeCoveredBecomesUnknown) {
     auto tokenizer = loadedTokenizer();
 
     EXPECT_EQ(tokenizer.wordPieceTokenize("xyz"), (std::vector<std::string>{ "[UNK]" }));
-    // One unknown piece makes the whole word unknown.
+    // One unknown piece makes whole word unknown.
     EXPECT_EQ(tokenizer.wordPieceTokenize("playxyz"), (std::vector<std::string>{ "[UNK]" }));
 }
 

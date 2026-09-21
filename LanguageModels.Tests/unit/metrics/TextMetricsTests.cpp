@@ -6,13 +6,13 @@ using evaluation::Tokens;
 using evaluation::splitWords;
 
 namespace {
-    // The worked example of Papineni et al., "BLEU: a Method for Automatic
+    // worked example of Papineni et al., "BLEU: a Method for Automatic
     // Evaluation of Machine Translation" (ACL 2002), section 2.
-    const char* paperReference1 = "It is a guide to action that ensures that the military will forever heed Party commands.";
-    const char* paperReference2 = "It is the guiding principle which guarantees the military forces always being under the command of the Party.";
-    const char* paperReference3 = "It is the practical guide for the army always to heed the directions of the party.";
-    const char* paperCandidate1 = "It is a guide to action which ensures that the military always obeys the commands of the party.";
-    const char* paperCandidate2 = "It is to insure the troops forever hearing the activity guidebook that party direct.";
+    const char* paperReference1 = "It is a guide to action that ensures that military will forever heed Party commands.";
+    const char* paperReference2 = "It is guiding principle which guarantees military forces always being under command of Party.";
+    const char* paperReference3 = "It is practical guide for army always to heed directions of party.";
+    const char* paperCandidate1 = "It is a guide to action which ensures that military always obeys commands of party.";
+    const char* paperCandidate2 = "It is to insure troops forever hearing activity guidebook that party direct.";
 
     std::vector<Tokens> paperReferences() {
         return { splitWords(paperReference1), splitWords(paperReference2), splitWords(paperReference3) };
@@ -37,7 +37,7 @@ TEST(SplitWordsTest, EmptyAndPunctuationOnlyTextGiveNoWords) {
 // ----------------------------------------------------------------- edit distance
 
 TEST(EditDistanceTest, KittenBecomesSittingInThreeEdits) {
-    // The standard textbook example: k->s, e->i, insert g.
+    // standard textbook example: k->s, e->i, insert g.
     EXPECT_EQ(evaluation::editDistance(std::string("kitten"), std::string("sitting")), 3u);
 }
 
@@ -65,7 +65,7 @@ TEST(EditDistanceTest, WorksOnAnySequenceOfComparableItems) {
 
 TEST(WordErrorRateTest, CountsSubstitutionsInsertionsAndDeletions) {
     // "sat" -> "sit" (substitution) and "the" deleted before "mat": 2 edits / 6 words.
-    Tokens reference = splitWords("the cat sat on the mat");
+    Tokens reference = splitWords("the cat sat on mat");
     Tokens hypothesis = splitWords("the cat sit on mat");
 
     EXPECT_DOUBLE_EQ(evaluation::wordErrorRate(reference, hypothesis), 2.0 / 6.0);
@@ -90,11 +90,11 @@ TEST(CharacterErrorRateTest, IsCharacterEditsOverReferenceLength) {
 // ------------------------------------------------------------------------- BLEU
 
 TEST(BleuTest, ModifiedPrecisionClipsRepeatedWords) {
-    // Paper: "the the the the the the the" against two references has modified
+    // Paper: "the the the the" against two references has modified
     // unigram precision 2/7, because "the" appears at most twice in one reference.
-    Tokens candidate = splitWords("the the the the the the the");
-    std::vector<Tokens> references = { splitWords("the cat is on the mat"),
-                                       splitWords("there is a cat on the mat") };
+    Tokens candidate = splitWords("the the the the");
+    std::vector<Tokens> references = { splitWords("the cat is on mat"),
+                                       splitWords("there is a cat on mat") };
 
     auto score = evaluation::sentenceBleu(candidate, references, 1);
 
@@ -150,7 +150,7 @@ TEST(BleuTest, CorpusBleuSumsCountsInsteadOfAveragingSentences) {
 }
 
 TEST(BleuTest, IdenticalSentenceScoresOne) {
-    Tokens sentence = splitWords("the quick brown fox jumps over the lazy dog");
+    Tokens sentence = splitWords("the quick brown fox jumps over lazy dog");
 
     auto score = evaluation::sentenceBleu(sentence, { sentence });
 
@@ -160,11 +160,11 @@ TEST(BleuTest, IdenticalSentenceScoresOne) {
 
 TEST(BleuTest, ShortCandidatesArePenalisedByTheBrevityPenalty) {
     Tokens candidate = splitWords("the cat is on the");
-    Tokens reference = splitWords("the cat is on the mat");
+    Tokens reference = splitWords("the cat is on mat");
 
     auto score = evaluation::sentenceBleu(candidate, { reference });
 
-    // Every n-gram of the candidate matches (precision 1), so BLEU is exactly the penalty.
+    // Every n-gram of candidate matches (precision 1), so BLEU is exactly penalty.
     EXPECT_DOUBLE_EQ(score.brevityPenalty, std::exp(1.0 - 6.0 / 5.0));
     EXPECT_DOUBLE_EQ(score.bleu, std::exp(1.0 - 6.0 / 5.0));
     EXPECT_EQ(score.referenceLength, 6u);
@@ -172,7 +172,7 @@ TEST(BleuTest, ShortCandidatesArePenalisedByTheBrevityPenalty) {
 
 TEST(BleuTest, BrevityPenaltyUsesTheClosestReferenceLength) {
     Tokens candidate = splitWords("a b c d");
-    // Reference lengths 2 and 5 are 2 and 1 away from 4, so 5 is the closest.
+    // Reference lengths 2 and 5 are 2 and 1 away from 4, so 5 is closest.
     std::vector<Tokens> references = { splitWords("a b"), splitWords("a b c d e") };
 
     auto score = evaluation::sentenceBleu(candidate, references, 1);
@@ -210,8 +210,8 @@ TEST(BleuTest, RejectsInvalidInput) {
 // ------------------------------------------------------------------------ ROUGE
 
 TEST(RougeTest, RougeOneCountsSharedWords) {
-    Tokens candidate = splitWords("the cat was found under the bed");
-    Tokens reference = splitWords("the cat was under the bed");
+    Tokens candidate = splitWords("the cat was found under bed");
+    Tokens reference = splitWords("the cat was under bed");
 
     auto score = evaluation::rougeN(candidate, reference, 1);
 
@@ -221,8 +221,8 @@ TEST(RougeTest, RougeOneCountsSharedWords) {
 }
 
 TEST(RougeTest, RougeTwoCountsSharedWordPairs) {
-    Tokens candidate = splitWords("the cat was found under the bed");
-    Tokens reference = splitWords("the cat was under the bed");
+    Tokens candidate = splitWords("the cat was found under bed");
+    Tokens reference = splitWords("the cat was under bed");
 
     auto score = evaluation::rougeN(candidate, reference, 2);
 
@@ -232,19 +232,19 @@ TEST(RougeTest, RougeTwoCountsSharedWordPairs) {
 }
 
 TEST(RougeTest, RepeatedWordsAreClippedToTheReferenceCount) {
-    auto score = evaluation::rougeN(splitWords("the the the"), splitWords("the cat"), 1);
+    auto score = evaluation::rougeN(splitWords("the the"), splitWords("the cat"), 1);
 
     EXPECT_DOUBLE_EQ(score.precision, 1.0 / 3.0);
     EXPECT_DOUBLE_EQ(score.recall, 1.0 / 2.0);
 }
 
 TEST(RougeTest, RougeLUsesTheLongestCommonSubsequence) {
-    Tokens candidate = splitWords("the cat was found under the bed");
-    Tokens reference = splitWords("the cat was under the bed");
+    Tokens candidate = splitWords("the cat was found under bed");
+    Tokens reference = splitWords("the cat was under bed");
 
     auto score = evaluation::rougeL(candidate, reference);
 
-    // "the cat was under the bed" is a subsequence of the candidate: length 6.
+    // "the cat was under bed" is a subsequence of candidate: length 6.
     EXPECT_DOUBLE_EQ(score.precision, 6.0 / 7.0);
     EXPECT_DOUBLE_EQ(score.recall, 1.0);
 }

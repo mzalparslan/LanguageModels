@@ -17,6 +17,9 @@ INCLUDE_DIRS := \
 	-ILanguageModels/include/layers \
 	-ILanguageModels/include/embeddings \
 	-ILanguageModels/include/metrics \
+	-ILanguageModels/include/data \
+	-ILanguageModels/include/pipelines \
+	-ILanguageModels/include/utilities \
 	-ILanguageModels/include/normalizations \
 	-ILanguageModels/include/models \
 	-ILanguageModels/include/tokenizers \

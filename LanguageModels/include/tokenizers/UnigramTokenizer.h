@@ -60,7 +60,7 @@ public:
      *
      * @param counts Occurrence count of each token.
      * @throws InvalidSizeError If counts is empty.
-     * @throws DivisionByZeroError If the counts sum to zero.
+     * @throws DivisionByZeroError If counts sum to zero.
      */
     void updateScores(const std::unordered_map<std::string, std::size_t>& counts) {
         std::size_t totalCount = 0;
@@ -68,7 +68,7 @@ public:
             totalCount += p.second;
         }
 
-        // log(0) is -infinity and every score below divides by the total.
+        // log(0) is -infinity and every score below divides by total.
         validation::requireNonEmpty(counts.size(), "Token counts");
         validation::requireNonZeroDenominator(totalCount, "total token count");
 
@@ -278,19 +278,19 @@ public:
      *
      * @param text Text to encode.
      * @return Token ids.
-     * @throws InvalidParameterError If text contains a character the vocabulary does not cover.
+     * @throws InvalidParameterError If text contains a character vocabulary does not cover.
      */
     std::vector<int> encode(const std::string& text) {
         std::vector<std::string> tokens = viterbiEncode(text);
 
         // viterbiEncode() stops early at a character no token covers, which
-        // would silently drop the rest of the text.
+        // would silently drop rest of text.
         std::size_t coveredLength = 0;
         for (const auto& t : tokens) {
             coveredLength += t.size();
         }
         if (coveredLength != text.size()) {
-            throw InvalidParameterError("Text contains a character that is not in the vocabulary!");
+            throw InvalidParameterError("Text contains a character that is not in vocabulary!");
         }
 
         std::vector<int> ids;
@@ -305,7 +305,7 @@ public:
      *
      * @param ids Token ids.
      * @return decoded string.
-     * @throws InvalidParameterError If an id is negative or outside the vocabulary.
+     * @throws InvalidParameterError If an id is negative or outside vocabulary.
      */
     std::string decode(const std::vector<int>& ids) {
         std::string res;

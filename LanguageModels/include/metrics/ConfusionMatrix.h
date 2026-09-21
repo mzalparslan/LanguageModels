@@ -7,12 +7,12 @@
 
 /**
  * @brief Confusion matrix for single-label classification (BERT's next-sentence
- * head, a masked-token classifier, ...) with the scores derived from it.
+ * head, a masked-token classifier, ...) with scores derived from it.
  *
- * Rows are the actual class, columns the predicted class, so count(a, p) is
+ * Rows are actual class, columns predicted class, so count(a, p) is
  * how many examples of class a were predicted as p. Precision, recall and F1
  * are defined as 0 when their denominator is zero (a class never predicted,
- * or never present), and the macro averages include every class, as
+ * or never present), and macro averages include every class, as
  * scikit-learn does.
  */
 class ConfusionMatrix {
@@ -43,7 +43,7 @@ public:
 	/**
 	 * @brief Records many examples at once.
 	 *
-	 * @throws InvalidSizeError If the vectors differ in length.
+	 * @throws InvalidSizeError If vectors differ in length.
 	 * @throws InvalidParameterError If a class id is out of range.
 	 */
 	void add(const std::vector<std::size_t>& actual, const std::vector<std::size_t>& predicted) {
@@ -89,7 +89,7 @@ public:
 	}
 
 	/**
-	 * @brief TP / (TP + FP) for one class: of the examples predicted as it,
+	 * @brief TP / (TP + FP) for one class: of examples predicted as it,
 	 * how many really were.
 	 */
 	double precision(std::size_t classId) const {
@@ -102,7 +102,7 @@ public:
 	}
 
 	/**
-	 * @brief TP / (TP + FN) for one class: of the examples that really are
+	 * @brief TP / (TP + FN) for one class: of examples that really are
 	 * it, how many were found.
 	 */
 	double recall(std::size_t classId) const {

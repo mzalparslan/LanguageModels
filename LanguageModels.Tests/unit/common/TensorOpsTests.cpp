@@ -33,7 +33,7 @@ TEST(MatMul2DTest, IdentityLeavesMatrixUnchanged) {
 }
 
 TEST(MatMul2DTest, ZeroEntriesAreSkippedWithoutChangingResult) {
-    // The sparse shortcut must not alter the product.
+    // sparse shortcut must not alter product.
     auto A = makeMatrix(2, 3, { 0, 2, 0, 0, 0, 3 });
     auto B = makeMatrix(3, 2, { 1, 2, 3, 4, 5, 6 });
     Tensor<double> C;
@@ -50,7 +50,7 @@ TEST(MatMul2DTest, ReusesResultBufferOfMatchingShapeAndClearsIt) {
 
     MatMul2D(A, B, C);
 
-    // A stale value must not leak into the accumulated product.
+    // A stale value must not leak into accumulated product.
     EXPECT_DOUBLE_EQ(C[0], 5.0);
 }
 
@@ -176,7 +176,7 @@ TEST(SoftmaxRowTest, LargeScoresDoNotOverflow) {
 }
 
 TEST(SoftmaxRowTest, MaskedScoresGetZeroProbability) {
-    // -1e9 is the value attention uses for masked positions.
+    // -1e9 is value attention uses for masked positions.
     auto mat = makeMatrix(1, 3, { 1, -1e9, 2 });
 
     softmaxRow(mat);

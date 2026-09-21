@@ -7,7 +7,7 @@ namespace {
     using Counts = std::unordered_map<std::string, std::size_t>;
 
     // A tokenizer whose vocabulary is set directly from counts, so
-    // segmentation can be tested without running the training loop.
+    // segmentation can be tested without running training loop.
     UnigramTokenizer makeTokenizer(const Counts& counts) {
         UnigramTokenizer tokenizer(1000);
         tokenizer.updateScores(counts);
@@ -184,7 +184,7 @@ TEST(UnigramTokenizerTrainTest, FrequentWordsBecomeSingleTokens) {
     testsupport::SilenceStdout quiet;
     UnigramTokenizer tokenizer(1000);
 
-    tokenizer.train("the cat the cat the cat the cat the cat", 5);
+    tokenizer.train("the cat cat cat cat cat", 5);
 
     EXPECT_LE(tokenizer.encode("the cat").size(), 3u);
 }
@@ -193,7 +193,7 @@ TEST(UnigramTokenizerTrainTest, VocabularyIsPrunedToTheTargetSize) {
     testsupport::SilenceStdout quiet;
     UnigramTokenizer tokenizer(8);
 
-    tokenizer.train("the quick brown fox jumps over the lazy dog the quick brown fox", 6);
+    tokenizer.train("the quick brown fox jumps over lazy dog quick brown fox", 6);
 
     EXPECT_LE(tokenizer.vocab.size(), 8u);
     EXPECT_EQ(tokenizer.vocab.size(), tokenizer.idToToken.size());

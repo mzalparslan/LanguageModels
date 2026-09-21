@@ -38,8 +38,8 @@ std::vector<int> toTokenizerIds(const std::vector<std::size_t>& modelIds) {
  * builds a GPT with Mixture-of-Experts layers over resulting vocabulary
  * and generates text from a prompt.
  *
- * @remark The final check prints a warning if the generated text contains
- * neither "brown" nor "fox" from the training sentence.
+ * @remark final check prints a warning if generated text contains
+ * neither "brown" nor "fox" from training sentence.
  *
  * @return 0 on completion.
  */
@@ -93,7 +93,7 @@ int testGPTWithUnigram() {
     std::cout << "Training GPT (MoE enabled)..." << std::endl;
     double learningRate = 0.01;
 
-    // The model takes size_t token ids; the tokenizer produces int ids.
+    // model takes size_t token ids; tokenizer produces int ids.
     std::vector<std::size_t> tokenIds = toModelIds(tokens);
 
     for (int epoch = 0; epoch < 200; epoch++) {
@@ -129,8 +129,8 @@ int testGPTWithUnigram() {
     }
     std::cout << std::endl;
 
-    // Convert tokenizer ids to the size_t ids DecoderOnlyModel expects, and
-    // the generated ids back for decoding.
+    // Convert tokenizer ids to size_t ids DecoderOnlyModel expects, and
+    // generated ids back for decoding.
     std::vector<std::size_t> promptTokens = toModelIds(promptIds);
     // Gen 20 tokens
     std::vector<std::size_t> generatedTokens = gpt.generate(promptTokens, 20);

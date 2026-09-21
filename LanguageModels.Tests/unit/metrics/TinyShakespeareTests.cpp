@@ -7,21 +7,21 @@
 #include <map>
 #include <set>
 
-// Tiny Shakespeare (resources/tinyshakespeare.txt): the concatenated Shakespeare
-// text from Andrej Karpathy's char-rnn, the standard small benchmark for
+// Tiny Shakespeare (resources/tinyshakespeare.txt): concatenated Shakespeare
+// text from Andrej Karpathy's char-rnn, standard small benchmark for
 // character-level language models. Its size and alphabet are widely published
 // (1,115,394 characters, 65 distinct, 40,000 lines), which lets these tests
-// confirm the right data is loaded before any model is judged on it.
+// confirm right data is loaded before any model is judged on it.
 //
-// The expected baseline scores were computed with an independent Python
+// expected baseline scores were computed with an independent Python
 // implementation, so they check NGramBaseline and Metrics against numbers not
 // produced by this library.
 
 namespace {
     struct Corpus {
         std::string text;
-        std::vector<std::size_t> ids;   // each byte's rank among the distinct bytes
-        std::vector<int> intIds;        // the same ids, for VanillaRNN's int interface
+        std::vector<std::size_t> ids;   // each byte's rank among distinct bytes
+        std::vector<int> intIds;        // same ids, for VanillaRNN's int interface
         std::size_t vocab = 0;
     };
 
@@ -69,8 +69,8 @@ TEST(TinyShakespeareTest, UnigramBaselineMatchesTheEntropyOfTheText) {
 
     Metrics metrics = unigram.evaluate(data.ids);
 
-    // Letter-frequency entropy of the text: 4.779 bits, perplexity 27.46,
-    // far below the 65 of a uniform guess. The most frequent character is the space.
+    // Letter-frequency entropy of text: 4.779 bits, perplexity 27.46,
+    // far below 65 of a uniform guess. most frequent character is space.
     EXPECT_NEAR(metrics.loss, 3.31279245, 1e-6);
     EXPECT_NEAR(metrics.perplexity, 27.4617039, 1e-4);
     EXPECT_NEAR(metrics.bpc, 4.7793, 1e-3);
@@ -86,7 +86,7 @@ TEST(TinyShakespeareTest, BigramBaselineMatchesTheConditionalEntropyOfTheText) {
 
     Metrics metrics = bigram.evaluate(data.ids);
 
-    // One character of context roughly halves the uncertainty: perplexity 11.6.
+    // One character of context roughly halves uncertainty: perplexity 11.6.
     EXPECT_NEAR(metrics.loss, 2.4525654, 1e-6);
     EXPECT_NEAR(metrics.perplexity, 11.6181136, 1e-4);
     EXPECT_NEAR(metrics.accuracy, 0.271337, 1e-6);
@@ -104,7 +104,7 @@ TEST(TinyShakespeareTest, HeldOutBaselinesFollowTheUsualNinetyTenSplit) {
     unigram.train(train);
     bigram.train(train);
 
-    // Laplace smoothing (add 1) on the last 10% of the text.
+    // Laplace smoothing (add 1) on last 10% of text.
     EXPECT_NEAR(unigram.evaluate(validation).perplexity, 28.4260317, 1e-3);
     EXPECT_NEAR(bigram.evaluate(validation).perplexity, 11.9638480, 1e-3);
 }
@@ -127,8 +127,8 @@ TEST(TinyShakespeareTest, ACharacterRnnLearnsBeyondTheUniformGuessAndGeneralises
     const std::size_t cut = data.ids.size() * 9 / 10;
     VanillaRNN<double> rnn(48, data.vocab);
 
-    // A short run over the start of the training split, in windows of 25 characters.
-    // (Learning rate 0.01: the loss is summed over the window, so 0.1 diverges here.)
+    // A short run over start of training split, in windows of 25 characters.
+    // (Learning rate 0.01: loss is summed over window, so 0.1 diverges here.)
     const std::size_t window = 25;
     auto hidden = rnn.getZeroState();
     for (int step = 0; step < 400; step++) {
@@ -138,7 +138,7 @@ TEST(TinyShakespeareTest, ACharacterRnnLearnsBeyondTheUniformGuessAndGeneralises
         (void)rnn.trainStep(inputs, targets, hidden, 0.01);
     }
 
-    // Judge on text the model never trained on.
+    // Judge on text model never trained on.
     std::vector<int> inputs(data.intIds.begin() + cut, data.intIds.begin() + cut + 500);
     std::vector<int> targets(data.intIds.begin() + cut + 1, data.intIds.begin() + cut + 501);
     Metrics metrics = rnn.evaluate(inputs, targets, rnn.getZeroState());

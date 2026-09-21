@@ -24,6 +24,7 @@ It is a sibling of the MachineLearningModels repository, which covers classical
 - [Repository layout](#repository-layout)
 - [Getting started](#getting-started)
 - [Using the library](#using-the-library)
+- [Pipelines](#pipelines)
 - [Measuring model quality](#measuring-model-quality)
 - [Design notes](#design-notes)
 - [Tests](#tests)
@@ -50,6 +51,7 @@ Paths are relative to `LanguageModels/include/` for headers and to
 | Mixture of Experts | `models/MoELayer.h`, `layers/DecoderWithMoe.h`, `models/BasicGPTWithMoE.h` | `TestBasicGPTWithMoE.cpp` |
 | Unigram tokenizer + GPT | `models/BasicGPTWithMoE.h` (`GPTWithUnigram`) | `TestGPTWithUnigram.cpp` |
 | Evaluation (perplexity, BLEU, ROUGE, F1, baselines) | `metrics/` | `TestTinyShakespeare.cpp` |
+| Pipelines (load, split, train and evaluate any model) | `pipelines/`, `data/`, `utilities/Logger.h` | `TestPipelines.cpp` |
 
 Shared infrastructure:
 
@@ -66,8 +68,8 @@ Shared infrastructure:
 ```
 LanguageModels/               the header-only library (organized as a VS project)
   include/
-    common/  config/  embeddings/  layers/
-    metrics/  models/  normalizations/  tokenizers/
+    common/  config/  data/  embeddings/  layers/  metrics/
+    models/  normalizations/  pipelines/  tokenizers/  utilities/
 LanguageModels.Examples/      one driver per course stage, linked into one executable
 LanguageModels.Tests/         Google Test unit tests, mirroring include/
 resources/                    data files used by the examples
@@ -114,10 +116,11 @@ make clean
 
 `LanguageModels.Examples` runs every course stage in order: Vanilla RNN,
 Simple Transformer, Mini Transformer, BERT, Basic GPT, Basic GPT with Mixture of
-Experts, GPT with Unigram tokenizer, WordPiece tokenizer, and the Tiny Shakespeare
-benchmark (see [Measuring model quality](#measuring-model-quality)). Each stage
-prints its loss as it trains and a small inference demo at the end. A stage that
-throws is reported and the next one still runs.
+Experts, GPT with Unigram tokenizer, WordPiece tokenizer, the Tiny Shakespeare
+benchmark (see [Measuring model quality](#measuring-model-quality)), and four
+[pipeline](#pipelines) stages (translation, character RNN, character GPT, BERT).
+Each stage prints its loss as it trains and a small inference demo at the end. A
+stage that throws is reported and the next one still runs.
 
 The **Mini Transformer** stage trains an English to French model on up to 5000
 sentence pairs from `fra.txt`, which takes hours (about 20 s per epoch for 500
@@ -132,6 +135,10 @@ LanguageModels.Examples.exe --quick
 `fra.txt` is not stored in the repository; see [Data files](#data-files). In
 Visual Studio, set `--quick` under Project Properties > Debugging > Command
 Arguments.
+
+Pass `--parallel` to run the pipeline stages with `ExecutionStrategy::Parallel`,
+which trains the Mini Transformer on several threads (the other models train the
+same way either way).
 
 ## Using the library
 
@@ -185,6 +192,68 @@ int main() {
 
 The `LanguageModels.Examples/` drivers show complete training loops for every
 model, including tokenization and evaluation.
+
+## Pipelines
+
+A `Pipeline` runs the same five steps for every model: load the data, split it,
+train, evaluate. Only the model, its settings and the kind of data change:
+
+```cpp
+#include "DataLoader.h"
+#include "DataSplitter.h"
+#include "MiniTransformerPipeline.h"
+
+void runTranslation(Logger& logger) {
+    // Tab-separated sentence pairs, normalized; then a shuffled 80/20 split.
+    auto samples = DataLoader::loadSentencePairs("fra.txt", 5000);
+    auto dataSet = DataSplitter::trainTestSplit(std::move(samples));
+
+    TranslationParameters<double> parameters;
+    parameters.epochs = 30;
+
+    Pipeline<double, MiniTransformer<double>, TranslationParameters<double>>
+        pipeline{ parameters, ExecutionStrategy::Parallel, logger };
+
+    pipeline.train(dataSet.trainingData);
+    TranslationMetrics metrics = pipeline.evaluate(dataSet.testData);
+
+    logger.info() << "BLEU-4: " << metrics.bleu
+        << ", word error rate: " << metrics.wordErrorRate;
+    std::cout << pipeline.modelAdapter().translate("hello") << "\n";
+}
+```
+
+| Model | Header | Sample | Settings | `evaluate()` returns |
+|---|---|---|---|---|
+| `MiniTransformer<T>` | `MiniTransformerPipeline.h` | `SentencePair` | `TranslationParameters` | `TranslationMetrics`: BLEU-4, word error rate, exact matches, teacher-forced perplexity |
+| `VanillaRNN<T>` | `VanillaRnnPipeline.h` | `char` (a text) | `RnnParameters` | `LanguageModelMetrics`: perplexity and accuracy next to unigram and bigram baselines |
+| `DecoderOnlyModel<T, ...>` (`BasicGPT`) | `GptPipeline.h` | `char` (a text) | `GptParameters` | `LanguageModelMetrics` |
+| `BertModel<T>` | `BertPipeline.h` | `std::string` (a sentence) | `BertParameters` | `BertMetrics`: hidden-word perplexity and accuracy, next-sentence confusion matrix |
+
+How it fits together:
+
+- **Data.** `DataLoader` reads sentence pairs, a text as characters, or a text as
+  normalized lines. `DataSplitter::trainTestSplit()` shuffles (for independent examples
+  such as sentence pairs); `DataSplitter::sequentialSplit()` cuts once and keeps the
+  order (for text read as a stream, and for BERT's "next sentence").
+- **Vocabulary comes from the training data.** A model cannot even be built before it
+  has seen the data, so each adapter builds its `WordTokenizer` or `CharTokenizer` from
+  the training part only. Words and characters unseen in training become `<UNK>`, so
+  held-out text is scored fairly and nothing leaks from the test set.
+- **`ExecutionStrategy`** is `Sequential` or `Parallel`. Only `MiniTransformer` acts on
+  it: `Parallel` calls `trainStepMultipleThread()` and `Sequential` calls `trainStep()`,
+  with bit-identical results. The other models accept it and train the same way. More
+  strategies can be added to the enum later.
+- **Logging.** Progress goes through `Logger` (`logger.info() << ...`), the same
+  interface as the sibling MachineLearningModels project. The default logger is shared
+  and writes to `std::clog`; pass your own to choose the level or the stream.
+- **Adding a model.** Specialize `ModelAdapter<T, Model, Parameters>` so that it
+  satisfies the `PipelineAdapter` concept (`Sample`, `Parameters`, `Result`, `train()`,
+  `evaluate()`), as `MiniTransformerPipeline.h` does.
+
+Errors are typed: `train()` and `evaluate()` throw `InvalidSizeError` for empty or
+unusable data, and `evaluate()` before `train()` throws `PipelineStateError`; a missing
+file throws `DataLoadError`.
 
 ## Measuring model quality
 
@@ -245,6 +314,14 @@ model.
 Adam (`UpdateRule::sgd()` / `UpdateRule::adam(step)`). Adam's moment buffers are
 allocated on first use, and gradients are clipped element-wise to [-1, 1].
 
+**Multi-threaded training step.** `MiniTransformer::trainStepMultipleThread()` is
+`trainStep()` with the vocabulary-sized work (output projection, softmax, and clearing
+and updating the embedding tables) split across `std::thread`s from a small shared
+`ThreadPool`. The tiny encoder and decoder layers stay on the calling thread. Every
+element is computed with the same operations in the same order, so the loss and the
+weights are bit-identical to `trainStep()` at any thread count. With a 3,000 / 5,000
+word vocabulary on a 16-thread desktop it ran about 4.5 times faster (Release build).
+
 **Errors are typed, not silent.** Invalid input throws instead of producing
 `NaN`s or crashing:
 
@@ -263,7 +340,7 @@ allocated on first use, and gradients are clipped element-wise to [-1, 1].
 ## Tests
 
 `LanguageModels.Tests` is a [Google Test](https://github.com/google/googletest)
-project with about 460 tests. There is one `*Tests.cpp` per library header, under
+project with about 630 tests. There is one `*Tests.cpp` per library header, under
 `unit/<folder>/`. They cover:
 
 - exact behavior: known matrix products, softmax values, RoPE angles, metrics formulas;

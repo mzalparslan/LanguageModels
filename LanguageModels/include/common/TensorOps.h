@@ -129,7 +129,7 @@ void softmaxRow(Tensor<T>& mat) {
 			sum += mat.data[i * N + j];
 		}
 
-		// A NaN or overflowing score makes the normalizer NaN/Inf; a zero
+		// A NaN or overflowing score makes normalizer NaN/Inf; a zero
 		// normalizer would divide by zero below. Fail here rather than
 		// spreading NaN through every later value.
 		validation::requireFinite(sum, "Softmax normalizer");

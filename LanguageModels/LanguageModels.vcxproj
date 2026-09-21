@@ -127,6 +127,7 @@
   <ItemGroup>
     <ClInclude Include="include\common\Tensor.h" />
     <ClInclude Include="include\common\Parameter.h" />
+    <ClInclude Include="include\common\ThreadPool.h" />
     <ClInclude Include="include\common\TensorOps.h" />
     <ClInclude Include="include\common\BenchmarkTimer.h" />
     <ClInclude Include="include\config\ModelConfig.h" />
@@ -155,6 +156,22 @@
     <ClInclude Include="include\models\BasicGPTWithMoE.h" />
     <ClInclude Include="include\tokenizers\WordPieceTokenizer.h" />
     <ClInclude Include="include\tokenizers\UnigramTokenizer.h" />
+    <ClInclude Include="include\metrics\ScopedBenchmarkTimer.h" />
+    <ClInclude Include="include\tokenizers\WordTokenizer.h" />
+    <ClInclude Include="include\tokenizers\CharTokenizer.h" />
+    <ClInclude Include="include\data\Dataset.h" />
+    <ClInclude Include="include\data\SentencePair.h" />
+    <ClInclude Include="include\data\TextNormalizer.h" />
+    <ClInclude Include="include\data\DataLoader.h" />
+    <ClInclude Include="include\data\DataSplitter.h" />
+    <ClInclude Include="include\utilities\Logger.h" />
+    <ClInclude Include="include\pipelines\ExecutionStrategy.h" />
+    <ClInclude Include="include\pipelines\Pipeline.h" />
+    <ClInclude Include="include\pipelines\CharacterCorpus.h" />
+    <ClInclude Include="include\pipelines\MiniTransformerPipeline.h" />
+    <ClInclude Include="include\pipelines\VanillaRnnPipeline.h" />
+    <ClInclude Include="include\pipelines\GptPipeline.h" />
+    <ClInclude Include="include\pipelines\BertPipeline.h" />
     <ClInclude Include="include\metrics\Metrics.h" />
     <ClInclude Include="include\metrics\LogitMetrics.h" />
     <ClInclude Include="include\metrics\ConfusionMatrix.h" />

@@ -96,12 +96,12 @@ TEST(BertModelTest, EncoderValidatesItsInputs) {
 
     // Empty input.
     EXPECT_THROW(bert.forwardEncoder({}, {}, out), InvalidSizeError);
-    // Segment ids must match the token count.
+    // Segment ids must match token count.
     EXPECT_THROW(bert.forwardEncoder({ 1, 2, 3 }, { 0, 0 }, out), InvalidSizeError);
-    // Longer than the position table.
+    // Longer than position table.
     EXPECT_THROW(bert.forwardEncoder(std::vector<std::size_t>(maxLen + 1, 1),
         std::vector<std::size_t>(maxLen + 1, 0), out), InvalidSizeError);
-    // Token id outside the vocabulary.
+    // Token id outside vocabulary.
     EXPECT_THROW(bert.forwardEncoder({ 1, vocabSize }, { 0, 0 }, out), InvalidParameterError);
     // There are only two segments.
     EXPECT_THROW(bert.forwardEncoder({ 1, 2 }, { 0, 2 }, out), InvalidParameterError);
@@ -167,8 +167,8 @@ TEST(BertModelTest, TrainingLearnsTheNextSentenceLabel) {
         }
     }
 
-    // With nothing masked the loss is the 2-class NSP loss alone; fitting
-    // the label drives it well below where it started (and below ln 2).
+    // With nothing masked loss is 2-class NSP loss alone; fitting
+    // label drives it well below where it started (and below ln 2).
     EXPECT_GT(first, 0.0);
     EXPECT_LT(last, 0.5 * first);
     EXPECT_LT(last, std::log(2.0));

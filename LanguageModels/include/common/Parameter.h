@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Tensor.h"
+#include "ThreadPool.h"
 #include "Validation.h"
 #include <random>
 #include <algorithm>
@@ -142,9 +143,9 @@ public:
 	 *
 	 * @throws InvalidParameterError If lr <= 0.
 	 * @throws NaNError, NonFiniteError If lr, a gradient, or an updated weight
-	 * is not finite: a bad value is reported before it is stored in the model.
-	 * @throws InvalidParameterSizeError If the gradient's size differs from the
-	 * weights' size, or the parameter was never initialized.
+	 * is not finite: a bad value is reported before it is stored in model.
+	 * @throws InvalidParameterSizeError If gradient's size differs from the
+	 * weights' size, or parameter was never initialized.
 	 */
 	void update(T lr, UpdateRule rule = UpdateRule::sgd()) {
 		validation::requirePositiveFinite(lr, "Learning rate");
@@ -163,7 +164,60 @@ public:
 		}
 	}
 
+	/**
+	 * @brief zeroGrad() spread over several threads, for parameters big enough
+	 * (embedding tables, output projections) that clearing them is a
+	 * noticeable part of a training step. Same result as zeroGrad().
+	 *
+	 * @param threads Most threads to use; 1 is same as zeroGrad().
+	 */
+	void zeroGradParallel(std::size_t threads) {
+		ThreadPool::shared().parallelFor(grad.size(), minElementsPerThread * 16, threads,
+			[this](std::size_t begin, std::size_t end) {
+				std::fill(grad.data.begin() + begin, grad.data.begin() + end, T(0));
+			});
+	}
+
+	/**
+	 * @brief update() spread over several threads. Every weight is updated
+	 * independently of others, so result is bit-identical to update()
+	 * whatever thread count.
+	 *
+	 * @param threads Most threads to use; 1 is same as update().
+	 * @throws same exceptions as update(). A bad value found by one thread
+	 * is reported after other threads finish; weights updated before the
+	 * error was found stay updated, as in update().
+	 */
+	void updateParallel(T lr, UpdateRule rule, std::size_t threads) {
+		validation::requirePositiveFinite(lr, "Learning rate");
+		validation::requirePositiveSize(value.size(), "Parameter size");
+		if (grad.size() != value.size()) {
+			throw InvalidParameterSizeError("Parameter gradient size differs from its weights!");
+		}
+
+		switch (rule.kind) {
+		case OptimizerKind::SGD:
+			ThreadPool::shared().parallelFor(value.size(), minElementsPerThread, threads,
+				[this, lr](std::size_t begin, std::size_t end) {
+					updateNoAdamRange(lr, begin, end);
+				});
+			break;
+		case OptimizerKind::Adam: {
+			const AdamSettings settings = prepareAdam(rule.step);
+			ThreadPool::shared().parallelFor(value.size(), minElementsPerThread, threads,
+				[this, lr, &settings](std::size_t begin, std::size_t end) {
+					updateWAdamRange(lr, settings, begin, end);
+				});
+			break;
+		}
+		}
+	}
+
 private:
+	// Fewest weights worth giving to one thread when updating them: below this,
+	// waking a thread costs more than update it would do.
+	static constexpr std::size_t minElementsPerThread = 4096;
+
 	/**
 	 * @brief Element-wise gradient clipping (clip-by-value) to limit
 	 * exploding gradients.
@@ -198,6 +252,28 @@ private:
 	 * @brief Update weights by using Adam Optimizer.
 	 */
 	void updateWAdam(T lr, std::size_t adamT, T beta1 = T(0.9), T beta2 = T(0.999), T epsilon = T(1e-8)) {
+		const AdamSettings settings = prepareAdam(adamT, beta1, beta2, epsilon);
+		updateWAdamRange(lr, settings, 0, value.size());
+	}
+
+	/**
+	 * @brief Adam hyper-parameters and per-timestep bias corrections.
+	 */
+	class AdamSettings {
+	public:
+		T beta1;
+		T beta2;
+		T epsilon;
+		T biasCorrection1;
+		T biasCorrection2;
+	};
+
+	/**
+	 * @brief Validates Adam arguments, works out bias corrections and
+	 * allocates moment buffers on first use. Everything that must happen
+	 * once per update, before any weight changes.
+	 */
+	AdamSettings prepareAdam(std::size_t adamT, T beta1 = T(0.9), T beta2 = T(0.999), T epsilon = T(1e-8)) {
 		if (0 == adamT) {
 			throw InvalidParameterError("Adam timestep must be >= 1!");
 		}
@@ -206,7 +282,7 @@ private:
 			throw InvalidParameterError("Adam beta1 and beta2 must be in [0, 1)!");
 		}
 
-		// Bias-correction denominators depend only on the timestep, so compute
+		// Bias-correction denominators depend only on timestep, so compute
 		// them once; a zero here would divide by zero for every weight.
 		auto biasCorrection1 = T(1) - std::pow(beta1, (double)adamT);
 		auto biasCorrection2 = T(1) - std::pow(beta2, (double)adamT);
@@ -219,9 +295,22 @@ private:
 			secondMoment = Tensor<T>(value.shape, T(0));
 		}
 
-		for (std::size_t i = 0; i < value.size(); i++) {
+		return { beta1, beta2, epsilon, biasCorrection1, biasCorrection2 };
+	}
+
+	/**
+	 * @brief Adam update of weights [begin, end). Each weight depends only
+	 * on itself, so ranges can run on different threads.
+	 */
+	void updateWAdamRange(T lr, const AdamSettings& settings, std::size_t begin, std::size_t end) {
+		const T beta1 = settings.beta1;
+		const T beta2 = settings.beta2;
+		const T epsilon = settings.epsilon;
+		const T biasCorrection1 = settings.biasCorrection1;
+		const T biasCorrection2 = settings.biasCorrection2;
+
+		for (std::size_t i = begin; i < end; i++) {
 			// clipGradient() lets NaN through unchanged, so reject it first.
-			validation::requireFinite(grad[i], "Gradient");
 			validation::requireFinite(grad[i], "Gradient");
 			T g = clipGradient(grad[i]);
 			// 1. Updated biased first moment estimate.
@@ -251,7 +340,14 @@ private:
 	 * @brief Update weights without any optimization.
 	 */
 	void updateNoAdam(T lr) {
-		for (std::size_t i = 0; i < value.size(); i++) {
+		updateNoAdamRange(lr, 0, value.size());
+	}
+
+	/**
+	 * @brief plain update of weights [begin, end).
+	 */
+	void updateNoAdamRange(T lr, std::size_t begin, std::size_t end) {
+		for (std::size_t i = begin; i < end; i++) {
 			// clipGradient() would turn an infinite gradient into 1 and pass NaN
 			// through, so reject both before clipping.
 			validation::requireFinite(grad[i], "Gradient");

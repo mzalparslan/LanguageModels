@@ -72,7 +72,7 @@ TEST(RotaryEmbeddingTest, RotationPreservesEveryRowNorm) {
 }
 
 TEST(RotaryEmbeddingTest, DotProductDependsOnlyOnRelativePosition) {
-    // The defining property of RoPE: <R(m) q, R(n) k> depends on m - n only.
+    // defining property of RoPE: <R(m) q, R(n) k> depends on m - n only.
     Rope rope;
     auto x = repeatedRows(8, { 0.3, -0.7, 1.1, 0.4 });
 
@@ -95,7 +95,7 @@ TEST(RotaryEmbeddingTest, DifferentPositionsRotateTheSameVectorDifferently) {
 }
 
 TEST(RotaryEmbeddingTest, ApplyingTwiceMatchesApplyingOnFreshCopies) {
-    // The cos/sin tables are shared statics; a second instance must agree.
+    // cos/sin tables are shared statics; a second instance must agree.
     Rope first;
     Rope second;
     auto a = testsupport::patternMatrix(5, 4);
@@ -169,7 +169,7 @@ TEST(RotaryEmbeddingTest, InverseLeavesPositionZeroUnchangedAndValidatesInput) {
 }
 
 TEST(RotaryEmbeddingTest, DefaultConfigIsModelConfig) {
-    // Compile-time check that the default template argument stays ModelConfig.
+    // Compile-time check that default template argument stays ModelConfig.
     static_assert(std::is_same_v<RotaryEmbedding<double>, RotaryEmbedding<double, ModelConfig>>);
     SUCCEED();
 }

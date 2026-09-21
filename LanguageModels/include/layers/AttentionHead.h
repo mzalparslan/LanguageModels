@@ -105,7 +105,7 @@ public:
 			rope->apply(Q);
 			rope->apply(K);
 			// RotaryEmbedding only reads shared tables, so a fresh instance is
-			// equivalent and avoids keeping a pointer that could outlive the caller's.
+			// equivalent and avoids keeping a pointer that could outlive caller's.
 			undoRope = [](Tensor<T>& gradient) {
 				RotaryEmbedding<T, RopeConfig> rotation;
 				rotation.applyInverse(gradient);
@@ -162,7 +162,7 @@ public:
 	 * @brief Backward pass for last forward() call: accumulates gradients
 	 * into Wq/Wk/Wv/Wo and returns gradients w.r.t. three inputs.
 	 *
-	 * If forward() applied RoPE, the Q/K gradients are rotated back through
+	 * If forward() applied RoPE, Q/K gradients are rotated back through
 	 * it before they reach Wq/Wk.
 	 *
 	 * @param dOut Gradient w.r.t. forward()'s output [seqQ, dHead].
@@ -229,9 +229,9 @@ public:
 		MatMul2D(dScoresT, Q, dKOut);
 
 		// Q and K were rotated by RoPE after their projections. dQOut and dKOut
-		// are gradients with respect to the rotated tensors, so rotate them back
+		// are gradients with respect to rotated tensors, so rotate them back
 		// (the transpose of a rotation is its inverse) before they reach
-		// Wq/Wk, which produced the unrotated Q/K.
+		// Wq/Wk, which produced unrotated Q/K.
 		if (undoRope) {
 			undoRope(dQOut);
 			undoRope(dKOut);
@@ -285,8 +285,8 @@ private:
 
 	/**
 	 * @brief Set by forward() when RoPE was applied to Q and K; empty otherwise.
-	 * backward() uses it to rotate the Q/K gradients back, because Q and K
-	 * are cached (and used for the gradients) in their rotated form.
+	 * backward() uses it to rotate Q/K gradients back, because Q and K
+	 * are cached (and used for gradients) in their rotated form.
 	 */
 	std::function<void(Tensor<T>&)> undoRope;
 };

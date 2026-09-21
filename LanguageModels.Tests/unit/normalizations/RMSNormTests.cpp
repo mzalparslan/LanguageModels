@@ -76,7 +76,7 @@ TEST(RMSNormTest, RowsAreNormalizedIndependently) {
 
     norm.forward(both, out);
 
-    // A row that is 10x larger normalizes to (almost exactly) the same values.
+    // A row that is 10x larger normalizes to (almost exactly) same values.
     EXPECT_NEAR(out[0], out[2], 1e-4);
     EXPECT_NEAR(out[1], out[3], 1e-4);
 }

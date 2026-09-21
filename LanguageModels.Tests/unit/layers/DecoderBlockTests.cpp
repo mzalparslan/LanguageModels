@@ -30,7 +30,7 @@ namespace {
         return changed;
     }
 
-    // Rows before the last must be identical: a causal block cannot see the future.
+    // Rows before last must be identical: a causal block cannot see future.
     template <typename Block>
     void expectCausal(Block& block) {
         auto x = patternMatrix(5, dim);

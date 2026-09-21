@@ -60,7 +60,7 @@ public:
         validation::requirePositiveSize(nExp, "MoELayer expert count");
         validation::requirePositiveSize(k, "MoELayer experts per token");
         if (k > nExp) {
-            throw InvalidParameterSizeError("MoELayer experts per token must not exceed the expert count!");
+            throw InvalidParameterSizeError("MoELayer experts per token must not exceed expert count!");
         }
 
         for (std::size_t i = 0; i < nExp; i++) {

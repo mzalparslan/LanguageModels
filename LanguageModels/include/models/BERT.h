@@ -173,6 +173,28 @@ public:
     }
 
     /**
+     * @brief Encoder + next-sentence head forward pass: scores whether sentence B
+     * really follows sentence A, from vector of first ([CLS]) token.
+     *
+     * @param src Token ids: [CLS] A [SEP] B [SEP].
+     * @param types Segment ids.
+     * @param outLogits Result [1, 2]: score of "IsNext" (0) and "NotNext" (1),
+     * two values of trainStep()'s nspLabel.
+     */
+    void predictNextSentenceLogits(const std::vector<std::size_t>& src, const std::vector<std::size_t>& types, Tensor<T>& outLogits) {
+        Tensor<T> encoded;
+        forwardEncoder(src, types, encoded);
+
+        // Pooler: first token is [CLS].
+        Tensor<T> clsToken({ 1, dModel });
+        for (std::size_t j = 0; j < dModel; j++) {
+            clsToken[j] = encoded.data[j];
+        }
+
+        nspProj.forward(clsToken, outLogits);
+    }
+
+    /**
      * @brief Full Training Step
      *
      * @param src input tokens (masked)
@@ -183,8 +205,8 @@ public:
      * @param rule Optimizer to apply (e.g. UpdateRule::adam(step)).
      * @return Combined MLM + NSP loss for this example.
      * @throws InvalidParameterError If lr <= 0, or a label is out of range.
-     * @throws InvalidSizeError If the input vectors have inconsistent lengths.
-     * @throws NaNError, NonFiniteError If the loss is not finite.
+     * @throws InvalidSizeError If input vectors have inconsistent lengths.
+     * @throws NaNError, NonFiniteError If loss is not finite.
      */
     T trainStep(const std::vector<std::size_t>& src, const std::vector<std::size_t>& types,
         const std::vector<std::size_t>& mlmLabels, std::size_t nspLabel,

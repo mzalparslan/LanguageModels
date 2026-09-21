@@ -10,7 +10,7 @@ using testsupport::makeMatrix;
 // ------------------------------------------------------------------ scoreLogits
 
 TEST(LogitMetricsTest, ScoresAHandComputedTwoRowExample) {
-    // Both rows hold the logits 1, 2, 3. Row 0 targets token 2 (the arg-max),
+    // Both rows hold logits 1, 2, 3. Row 0 targets token 2 (the arg-max),
     // row 1 targets token 0.
     auto logits = makeMatrix(2, 3, { 1, 2, 3, 1, 2, 3 });
     double logSumExp = std::log(std::exp(1.0) + std::exp(2.0) + std::exp(3.0));
@@ -42,7 +42,7 @@ TEST(LogitMetricsTest, ConfidentCorrectPredictionsGivePerplexityOne) {
 }
 
 TEST(LogitMetricsTest, HugeLogitsDoNotOverflow) {
-    // exp(1000) overflows a double; the log-softmax must not compute it directly.
+    // exp(1000) overflows a double; log-softmax must not compute it directly.
     auto logits = makeMatrix(1, 2, { 1000, 0 });
 
     Metrics metrics = evaluation::scoreLogits(logits, { 0 });

@@ -9,11 +9,11 @@ namespace {
     const std::size_t hiddenSize = 8;
     const std::size_t vocabSize = 3;
 
-    // "abcabc..." as ids 0 1 2 0 1 2 and the ids that follow each of them.
+    // "abcabc..." as ids 0 1 2 0 1 2 and ids that follow each of them.
     const std::vector<int> inputs = { 0, 1, 2, 0, 1, 2 };
     const std::vector<int> targets = { 1, 2, 0, 1, 2, 0 };
 
-    // Trains from the zero state on every step and returns first/last loss.
+    // Trains from zero state on every step and returns first/last loss.
     std::pair<double, double> trainOnPattern(VanillaRNN<double>& rnn, int steps, double learningRate) {
         double first = 0.0, last = 0.0;
         for (int step = 0; step < steps; step++) {
@@ -145,7 +145,7 @@ TEST(VanillaRNNTest, SampleOfZeroCharactersReturnsOnlyTheSeed) {
 }
 
 TEST(VanillaRNNTest, SampleIsReproducibleWhenTheCRandomGeneratorIsReseeded) {
-    // sample() draws from the C library's rand(), so reseeding makes it repeatable.
+    // sample() draws from C library's rand(), so reseeding makes it repeatable.
     VanillaRNN<double> rnn(hiddenSize, vocabSize);
 
     std::srand(123);

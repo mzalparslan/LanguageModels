@@ -66,7 +66,7 @@ public:
 			throw DivisionByZeroError("Division by zero: prediction count is zero!");
 		}
 		if (correctPredictions > predictionCount) {
-			throw InvalidParameterError("Correct predictions exceed the prediction count!");
+			throw InvalidParameterError("Correct predictions exceed prediction count!");
 		}
 		if (std::isnan(totalLoss)) {
 			throw NaNError("Total loss is NaN!");

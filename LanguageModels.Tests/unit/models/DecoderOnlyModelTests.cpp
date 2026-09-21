@@ -7,7 +7,7 @@
 #include <type_traits>
 
 namespace {
-    // BasicGPTConfig fixes the head width at 16 and the context at 20.
+    // BasicGPTConfig fixes head width at 16 and context at 20.
     const std::size_t vocabSize = 10;
     const std::size_t dModel = BasicGPTConfig::d_head;
     const std::size_t maxLen = BasicGPTConfig::maxSeqLen;
@@ -16,7 +16,7 @@ namespace {
     template <typename B>
     concept CanBuildModel = requires { typename DecoderOnlyModel<double, B, BasicGPTConfig>; };
 
-    // Trains on the repeating pattern 0, 1, 2, 0, 1, 2, ... and returns the
+    // Trains on repeating pattern 0, 1, 2, 0, 1, 2, ... and returns the
     // first and last loss.
     template <typename Model>
     std::pair<double, double> trainOnPattern(Model& model, int steps, double learningRate) {
@@ -78,7 +78,7 @@ TEST(DecoderOnlyModelTest, ContextLongerThanConfigThrowsInvalidParameterSizeErro
 }
 
 TEST(DecoderOnlyModelTest, ModelWidthMustMatchTheConfiguredHeadWidth) {
-    // RoPE tables are sized from the config, so a different width fails on use.
+    // RoPE tables are sized from config, so a different width fails on use.
     BasicGPT gpt(vocabSize, 8, 1, maxLen);
     Tensor<double> logits;
 
@@ -106,7 +106,7 @@ TEST(DecoderOnlyModelTest, ForwardGivesOneLogitRowPerTokenAndOneColumnPerVocabul
 }
 
 TEST(DecoderOnlyModelTest, ForwardIsDeterministicAcrossInstances) {
-    // The default seed is fixed, so two models start with identical weights.
+    // default seed is fixed, so two models start with identical weights.
     BasicGPT first(vocabSize, dModel, 2, maxLen);
     BasicGPT second(vocabSize, dModel, 2, maxLen);
     Tensor<double> logitsA, logitsB;
@@ -124,7 +124,7 @@ TEST(DecoderOnlyModelTest, ForwardIsCausal) {
     gpt.forward({ 3, 1, 4, 1, 5 }, before);
     gpt.forward({ 3, 1, 4, 1, 9 }, after);
 
-    // Changing only the last token must not change earlier predictions.
+    // Changing only last token must not change earlier predictions.
     for (std::size_t i = 0; i < 4 * vocabSize; i++) {
         EXPECT_NEAR(before[i], after[i], 1e-12) << "index " << i;
     }
@@ -166,7 +166,7 @@ TEST(DecoderOnlyModelTest, TrainStepReturnsAFinitePositiveLoss) {
 
     EXPECT_TRUE(std::isfinite(loss));
     EXPECT_GT(loss, 0.0);
-    // Mean cross-entropy of an untrained model is on the order of ln(vocab).
+    // Mean cross-entropy of an untrained model is on order of ln(vocab).
     EXPECT_LT(loss, 3.0 * std::log(static_cast<double>(vocabSize)));
 }
 
@@ -198,9 +198,9 @@ TEST(DecoderOnlyModelTest, TrainStepValidatesItsArguments) {
     EXPECT_THROW(gpt.trainStep({ 0, 1 }, { 1, 2 }, 0.0), InvalidParameterError);
     EXPECT_THROW(gpt.trainStep({ 0, 1 }, { 1, 2 }, -0.1), InvalidParameterError);
     EXPECT_THROW(gpt.trainStep({ 0, 1 }, { 1, 2 }, std::nan("")), NaNError);
-    // Targets must be as long as the input.
+    // Targets must be as long as input.
     EXPECT_THROW(gpt.trainStep({ 0, 1, 2 }, { 1, 2 }, 0.05), InvalidSizeError);
-    // Token ids must be inside the vocabulary.
+    // Token ids must be inside vocabulary.
     EXPECT_THROW(gpt.trainStep({ 0, 1 }, { 1, vocabSize }, 0.05), InvalidParameterError);
     EXPECT_THROW(gpt.trainStep({ vocabSize, 1 }, { 1, 2 }, 0.05), InvalidParameterError);
     EXPECT_THROW(gpt.trainStep({}, {}, 0.05), InvalidSizeError);
