@@ -13,7 +13,13 @@ enum class ExecutionStrategy {
 
 	// Several threads: MiniTransformer::trainStepMultipleThread(). Same
 	// results as Sequential, only faster on a large vocabulary.
-	Parallel
+	Parallel,
+
+	// The NVIDIA GPU: MiniTransformer::trainStepCuda(). The vocabulary-sized part
+	// of every step runs on the GPU, so it is much faster on a large vocabulary.
+	// Results are the same as Sequential to within rounding, not bit for bit.
+	// Needs a CUDA device; training with it throws CudaError otherwise.
+	Cuda
 };
 
 /**
@@ -25,6 +31,8 @@ inline const char* toString(ExecutionStrategy strategy) {
 		return "Sequential";
 	case ExecutionStrategy::Parallel:
 		return "Parallel";
+	case ExecutionStrategy::Cuda:
+		return "Cuda";
 	}
 	return "Unknown";
 }

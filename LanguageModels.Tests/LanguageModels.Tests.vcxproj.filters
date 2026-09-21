@@ -37,6 +37,9 @@
     <Filter Include="unit\utilities">
       <UniqueIdentifier>{a1b2c3db-1a2b-4c3d-8e4f-5f6a7b8c9d0b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="unit\cuda">
+      <UniqueIdentifier>{a1b2c3dc-1a2b-4c3d-8e4f-5f6a7b8c9d0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -124,6 +127,12 @@
     <ClCompile Include="unit\models\MiniTransformerThreadingTests.cpp">
       <Filter>unit\models</Filter>
     </ClCompile>
+    <ClCompile Include="unit\models\MiniTransformerCudaTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\models\MiniTransformerFloatTests.cpp">
+      <Filter>unit\models</Filter>
+    </ClCompile>
     <ClCompile Include="unit\data\DataLoaderTests.cpp">
       <Filter>unit\data</Filter>
     </ClCompile>
@@ -155,6 +164,15 @@
       <Filter>unit\pipelines</Filter>
     </ClCompile>
     <ClCompile Include="unit\pipelines\BertPipelineTests.cpp">
+      <Filter>unit\pipelines</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\cuda\CudaRuntimeTests.cpp">
+      <Filter>unit\cuda</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\cuda\CudaVocabularyHeadTests.cpp">
+      <Filter>unit\cuda</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\pipelines\MiniTransformerCudaPipelineTests.cpp">
       <Filter>unit\pipelines</Filter>
     </ClCompile>
     <ClCompile Include="unit\models\MoELayerTests.cpp">

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Build Scripts">
+      <UniqueIdentifier>{E2B0C7A1-5D3F-4B96-8A41-7C9F0D2E6B13}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\LanguageModels\include\cuda\CudaRuntime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\LanguageModels\include\cuda\CudaVocabularyHead.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\detail\CudaHost.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\detail\DeviceArray.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\detail\DeviceMath.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\detail\VocabularyKernels.cuh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="src\CudaVocabularyHeadUnavailable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="src\CudaVocabularyHead.cu">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <None Include="src\CudaVocabularyHead.cu">
+      <Filter>Source Files</Filter>
+    </None>
+    <ClCompile Include="src\CudaUnavailable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="src\CudaRuntime.cu">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <None Include="src\CudaRuntime.cu">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="nvcc-build.cmd">
+      <Filter>Build Scripts</Filter>
+    </None>
+  </ItemGroup>
+</Project>

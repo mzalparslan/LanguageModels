@@ -80,3 +80,12 @@ class PipelineStateError : public std::logic_error {
 public:
 	using std::logic_error::logic_error;
 };
+
+/**
+ * @brief A CUDA call failed, or CUDA was asked for but is not available (no
+ * NVIDIA device, or the library was built without the CUDA Toolkit).
+ */
+class CudaError : public std::runtime_error {
+public:
+	using std::runtime_error::runtime_error;
+};

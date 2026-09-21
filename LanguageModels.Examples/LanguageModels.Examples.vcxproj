@@ -96,7 +96,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\cuda;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -116,7 +116,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\cuda;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,7 +135,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\cuda;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,7 +156,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\cuda;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -188,7 +188,20 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
     <ProjectReference Include="..\LanguageModels\LanguageModels.vcxproj">
       <Project>{48fa991d-7a1c-43cb-a72a-f4a3b7029d5b}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\LanguageModels.Cuda\LanguageModels.Cuda.vcxproj">
+      <Project>{2f6b1c4e-8d3a-4a57-9c1e-6b0d5a7e9f21}</Project>
+    </ProjectReference>
   </ItemGroup>
+  <!-- The GPU code is linked against the CUDA runtime only where it was really built with nvcc
+       (x64, toolkit installed); elsewhere LanguageModels.Cuda is a stand-in that needs no CUDA. -->
+  <ItemDefinitionGroup Condition="'$(Platform)'=='x64' And Exists('$(CUDA_PATH)\bin\nvcc.exe')">
+    <Link>
+      <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- cudart_static.lib names the static C runtime as a default library; the projects use the DLL runtime (/MD). -->
+      <IgnoreSpecificDefaultLibraries>libcmt.lib;libcmtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

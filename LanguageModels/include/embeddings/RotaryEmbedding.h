@@ -109,8 +109,9 @@ private:
                 // (long range), like sinusoidal encoding.
                 double theta = std::pow(10000.0, -2.0 * i / dimension);
                 double val = pos * theta;
-                cosCache.data[pos * cacheDim + i] = std::cos(val);
-                sinCache.data[pos * cacheDim + i] = std::sin(val);
+                // Worked out in double whatever T is, then rounded once to T.
+                cosCache.data[pos * cacheDim + i] = static_cast<T>(std::cos(val));
+                sinCache.data[pos * cacheDim + i] = static_cast<T>(std::sin(val));
             }
         }
     }

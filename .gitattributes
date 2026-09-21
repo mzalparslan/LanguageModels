@@ -9,3 +9,5 @@ resources/*.txt text eol=lf
 *.sln text eol=crlf
 *.vcxproj text eol=crlf
 *.vcxproj.filters text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf

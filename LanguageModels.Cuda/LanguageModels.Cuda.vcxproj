@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The optional CUDA (NVIDIA GPU) part of LanguageModels, as a static library.
+
+  It always builds and links, so every other project can use it unconditionally:
+   - x64 with the CUDA Toolkit installed (CUDA_PATH set, nvcc present): the .cu files are
+     compiled by nvcc, through nvcc-build.cmd, and the GPU code is real;
+   - otherwise (no toolkit, or Win32): CudaUnavailable.cpp is compiled instead, and
+     cuda::isAvailable() is false.
+
+  Toolset v143 on purpose: nvcc of CUDA 13.0 does not accept the newer v145 (MSVC 19.50+)
+  as its host compiler. Override the GPU architecture with /p:CudaComputeCapability=86
+  (default 89, an RTX 40 series card).
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{2F6B1C4E-8D3A-4A57-9C1E-6B0D5A7E9F21}</ProjectGuid>
+    <RootNamespace>LanguageModelsCuda</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(Configuration)\$(Platform)\</OutDir>
+    <!-- True only where the GPU code can really be built: x64, with nvcc installed. -->
+    <HasCuda Condition="'$(Platform)'=='x64' And Exists('$(CUDA_PATH)\bin\nvcc.exe')">true</HasCuda>
+    <CudaComputeCapability Condition="'$(CudaComputeCapability)'==''">89</CudaComputeCapability>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\cuda;$(SolutionDir)LanguageModels\include\common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Platform)'=='Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <!--
+    For the editor only: nvcc compiles the .cu files, but IntelliSense reads these settings
+    to understand them. Without them it cannot find cuda_runtime.h and does not know
+    __global__, threadIdx and the like. (The <<< >>> launch syntax is still flagged.)
+  -->
+  <PropertyGroup Condition="'$(HasCuda)'=='true'">
+    <IncludePath>$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(HasCuda)'=='true'">
+    <ClCompile>
+      <PreprocessorDefinitions>__CUDACC__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CUDA_PATH)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\LanguageModels\include\cuda\CudaRuntime.h" />
+    <ClInclude Include="..\LanguageModels\include\cuda\CudaVocabularyHead.h" />
+    <ClInclude Include="src\detail\CudaHost.cuh" />
+    <ClInclude Include="src\detail\DeviceArray.cuh" />
+    <ClInclude Include="src\detail\DeviceMath.cuh" />
+    <ClInclude Include="src\detail\VocabularyKernels.cuh" />
+  </ItemGroup>
+  <!-- With the CUDA Toolkit: the real implementation, compiled by nvcc and added to the library. -->
+  <ItemGroup Condition="'$(HasCuda)'=='true'">
+    <CustomBuild Include="src\CudaRuntime.cu">
+      <FileType>Document</FileType>
+      <Command>call "$(ProjectDir)nvcc-build.cmd" "%(FullPath)" "$(IntDir)%(Filename).obj" $(Configuration) $(VCToolsVersion) "$(VCInstallDir)" "$(SolutionDir)" $(CudaComputeCapability)</Command>
+      <Outputs>$(IntDir)%(Filename).obj</Outputs>
+      <AdditionalInputs>$(ProjectDir)nvcc-build.cmd;$(SolutionDir)LanguageModels\include\cuda\CudaRuntime.h;$(SolutionDir)LanguageModels\include\common\Exceptions.h;$(ProjectDir)src\detail\CudaHost.cuh</AdditionalInputs>
+      <Message>nvcc: compiling %(Filename)%(Extension) for sm_$(CudaComputeCapability)</Message>
+      <LinkObjects>true</LinkObjects>
+    </CustomBuild>
+    <CustomBuild Include="src\CudaVocabularyHead.cu">
+      <FileType>Document</FileType>
+      <Command>call "$(ProjectDir)nvcc-build.cmd" "%(FullPath)" "$(IntDir)%(Filename).obj" $(Configuration) $(VCToolsVersion) "$(VCInstallDir)" "$(SolutionDir)" $(CudaComputeCapability)</Command>
+      <Outputs>$(IntDir)%(Filename).obj</Outputs>
+      <AdditionalInputs>$(ProjectDir)nvcc-build.cmd;$(SolutionDir)LanguageModels\include\cuda\CudaRuntime.h;$(SolutionDir)LanguageModels\include\cuda\CudaVocabularyHead.h;$(SolutionDir)LanguageModels\include\common\Exceptions.h;$(SolutionDir)LanguageModels\include\common\Validation.h;$(ProjectDir)src\detail\CudaHost.cuh;$(ProjectDir)src\detail\DeviceArray.cuh;$(ProjectDir)src\detail\DeviceMath.cuh;$(ProjectDir)src\detail\VocabularyKernels.cuh</AdditionalInputs>
+      <Message>nvcc: compiling %(Filename)%(Extension) for sm_$(CudaComputeCapability)</Message>
+      <LinkObjects>true</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <!-- Without it: a stand-in that reports CUDA as unavailable. -->
+  <ItemGroup Condition="'$(HasCuda)'!='true'">
+    <ClCompile Include="src\CudaUnavailable.cpp" />
+    <ClCompile Include="src\CudaVocabularyHeadUnavailable.cpp" />
+    <None Include="src\CudaRuntime.cu" />
+    <None Include="src\CudaVocabularyHead.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="nvcc-build.cmd" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
