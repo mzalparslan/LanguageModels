@@ -40,18 +40,20 @@ Paths are relative to `LanguageModels/include/` for headers and to
 
 | Course stage | Library headers | Driver |
 |---|---|---|
-| Vanilla RNN (character-level model, BPTT) | `models/VanillaRNN.h`, `metrics/Metrics.h` | `VanillaRNN.cpp` |
-| Attention | `layers/AttentionHead.h`, `layers/MultiHeadAttention.h` | |
-| Embeddings (learned, sinusoidal, rotary/RoPE) | `embeddings/Embedding.h`, `embeddings/SinusoidalEmbedding.h`, `embeddings/RotaryEmbedding.h` | |
-| Transformer building blocks | `layers/LinearLayer.h`, `layers/FeedForward.h`, `normalizations/RMSNorm.h` | |
-| Encoder-decoder transformer (translation), with greedy and beam-search decoding | `models/MiniTransformer.h` (`generate()`, `beamSearch()`) | `TestSimpleTransformer.cpp`, `TestMiniTransformer.cpp` |
-| Tokenizers (WordPiece, Unigram) | `tokenizers/WordPieceTokenizer.h`, `tokenizers/UnigramTokenizer.h` | `TestWordPieceTokenizer.cpp` |
-| BERT (encoder-only, masked LM + next-sentence) | `models/BERT.h`, `models/BertLayer.h` | `TestBert.cpp` |
-| GPT (decoder-only) | `models/DecoderOnlyModel.h`, `models/BasicGPT.h`, `layers/BasicDecoderBlock.h` | `TestBasicGPT.cpp` |
-| Mixture of Experts | `models/MoELayer.h`, `layers/DecoderWithMoe.h`, `models/BasicGPTWithMoE.h` | `TestBasicGPTWithMoE.cpp` |
+| Vanilla RNN (character-level model, BPTT) | `models/VanillaRNN.h`<br>`metrics/Metrics.h` | `VanillaRNN.cpp` |
+| Attention | `layers/AttentionHead.h`<br>`layers/MultiHeadAttention.h` | |
+| Embeddings (learned, sinusoidal, rotary/RoPE) | `embeddings/Embedding.h`<br>`embeddings/SinusoidalEmbedding.h`<br>`embeddings/RotaryEmbedding.h` | |
+| Transformer building blocks | `layers/LinearLayer.h`<br>`layers/FeedForward.h`<br>`normalizations/RMSNorm.h` | |
+| Encoder-decoder transformer (translation) | `models/MiniTransformer.h` | `TestSimpleTransformer.cpp`, `TestMiniTransformer.cpp` |
+| Tokenizers (WordPiece, Unigram) | `tokenizers/WordPieceTokenizer.h`<br>`tokenizers/UnigramTokenizer.h` | `TestWordPieceTokenizer.cpp` |
+| BERT (encoder-only, masked LM + next-sentence) | `models/BERT.h`<br>`models/BertLayer.h` | `TestBert.cpp` |
+| GPT (decoder-only) | `models/DecoderOnlyModel.h`<br>`models/BasicGPT.h`<br>`layers/BasicDecoderBlock.h` | `TestBasicGPT.cpp` |
+| Mixture of Experts | `models/MoELayer.h`<br>`layers/DecoderWithMoe.h`<br>`models/BasicGPTWithMoE.h` | `TestBasicGPTWithMoE.cpp` |
 | Unigram tokenizer + GPT | `models/BasicGPTWithMoE.h` (`GPTWithUnigram`) | `TestGPTWithUnigram.cpp` |
 | Evaluation (perplexity, BLEU, ROUGE, F1, baselines) | `metrics/` | `TestTinyShakespeare.cpp` |
-| Pipelines (load, split, train and evaluate any model) | `pipelines/`, `data/`, `utilities/Logger.h` | `TestPipelines.cpp` |
+| Pipelines (load, split, train and evaluate any model) | `pipelines/`<br>`data/`<br>`utilities/Logger.h` | `TestPipelines.cpp` |
+
+`MiniTransformer` also decodes translations itself: `generate()` (greedy) and `beamSearch()`.
 
 Shared infrastructure:
 
@@ -223,12 +225,23 @@ void runTranslation(Logger& logger) {
 }
 ```
 
-| Model | Header | Sample | Settings | `evaluate()` returns |
-|---|---|---|---|---|
-| `MiniTransformer<T>` | `MiniTransformerPipeline.h` | `SentencePair` | `TranslationParameters` | `TranslationMetrics`: BLEU-4, word error rate, exact matches, teacher-forced perplexity |
-| `VanillaRNN<T>` | `VanillaRnnPipeline.h` | `char` (a text) | `RnnParameters` | `LanguageModelMetrics`: perplexity and accuracy next to unigram and bigram baselines |
-| `DecoderOnlyModel<T, ...>` (`BasicGPT`) | `GptPipeline.h` | `char` (a text) | `GptParameters` | `LanguageModelMetrics` |
-| `BertModel<T>` | `BertPipeline.h` | `std::string` (a sentence) | `BertParameters` | `BertMetrics`: hidden-word perplexity and accuracy, next-sentence confusion matrix |
+Models that have a pipeline (header in `pipelines/`):
+
+- **`MiniTransformer<T>`** (`MiniTransformerPipeline.h`)
+  - Sample: `SentencePair`. Settings: `TranslationParameters`.
+  - `evaluate()` returns `TranslationMetrics`: BLEU-4, word error rate, exact
+    matches and teacher-forced perplexity.
+- **`VanillaRNN<T>`** (`VanillaRnnPipeline.h`)
+  - Sample: `char`, so the data is a text. Settings: `RnnParameters`.
+  - `evaluate()` returns `LanguageModelMetrics`: perplexity and accuracy next to
+    unigram and bigram baselines.
+- **`DecoderOnlyModel<T, ...>`, for example `BasicGPT`** (`GptPipeline.h`)
+  - Sample: `char`, so the data is a text. Settings: `GptParameters`.
+  - `evaluate()` returns `LanguageModelMetrics`.
+- **`BertModel<T>`** (`BertPipeline.h`)
+  - Sample: `std::string`, one sentence. Settings: `BertParameters`.
+  - `evaluate()` returns `BertMetrics`: hidden-word perplexity and accuracy, and a
+    next-sentence confusion matrix.
 
 How it fits together:
 
@@ -260,13 +273,17 @@ file throws `DataLoadError`.
 `include/metrics/` scores models independently of how they are built, so any two
 models can be compared on the same footing:
 
-| Header | What it measures | Typical use |
-|---|---|---|
-| `Metrics.h` | loss, perplexity, next-token accuracy, bits per token | result type of `VanillaRNN::evaluate` and `DecoderOnlyModel::evaluate` |
-| `LogitMetrics.h` | the same, straight from a `[rows, vocab]` logits tensor (`scoreLogits`, and `MetricsAccumulator` to pool many windows); `topKAccuracy` | GPT, Mini Transformer, BERT's masked-LM head |
-| `ConfusionMatrix.h` | accuracy, per-class and macro precision, recall and F1 | classification heads such as BERT's next-sentence prediction |
-| `TextMetrics.h` | BLEU (sentence and corpus), ROUGE-1/2/L, edit distance, word and character error rate | translation and generation quality |
-| `NGramBaseline.h` | unigram and bigram language models | a yardstick a trained model has to beat |
+- **`Metrics.h`**: loss, perplexity, next-token accuracy and bits per token. The result
+  type of `VanillaRNN::evaluate()` and `DecoderOnlyModel::evaluate()`.
+- **`LogitMetrics.h`**: the same, straight from a `[rows, vocab]` logits tensor
+  (`scoreLogits`), `MetricsAccumulator` to pool many windows of text, and
+  `topKAccuracy`. For GPT, Mini Transformer and BERT's masked-word head.
+- **`ConfusionMatrix.h`**: accuracy, and per-class and macro precision, recall and F1.
+  For classification heads such as BERT's next-sentence prediction.
+- **`TextMetrics.h`**: BLEU (sentence and corpus), ROUGE-1/2/L, edit distance, and word
+  and character error rate. For translation and generation quality.
+- **`NGramBaseline.h`**: unigram and bigram language models, a yardstick a trained
+  model has to beat.
 
 ```cpp
 // Perplexity of a decoder-only model on one window of text.
