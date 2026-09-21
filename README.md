@@ -10,10 +10,23 @@ There are no dependencies and no framework. Tensors, layers, backpropagation
 and optimizers are all written by hand, and every gradient is checked against
 finite differences in the test suite.
 
-> This is a learning project, not a production LLM library. It runs on the
-> CPU with batch size 1 and small models. The goal is to show each idea working
-> end to end and to keep the code readable, not to compete with an established
-> framework on speed or scale.
+> This is a learning project, not a production LLM library. It trains small models, 
+> on CPU (parallel or sequential) and, on NVIDIA GPU for Mini Transformer model. 
+> Goal is to show each idea working end to end and to keep the code readable, 
+> not to compete with an established framework on scale.
+
+Mini Transformer can train in three ways, with the same results. One training step in
+`float` at the vocabulary of the full `fra.txt` (16,097 source and 30,152 target words),
+Release build, RTX 4060 Ti and a 16-thread CPU:
+
+| Execution | per step | speedup | one epoch (191,351 pairs) |
+|---|---|---|---|
+| `Sequential`: `trainStep`, one thread | 50 ms | 1x | about 2.7 hours |
+| `Parallel`: `trainStepMultipleThread`, 16 threads | 11 ms | 4.4x | about 36 minutes |
+| `Cuda`: `trainStepCuda`, on the GPU | 1.5 ms | 34x | about 4.7 minutes |
+
+See [CUDA](#cuda-optional) and [docs/CUDA.md](docs/CUDA.md) for how it works and how it was
+measured.
 
 It is a sibling of the MachineLearningModels repository, which covers classical
 (non-deep-learning) ML algorithms and uses the same project layout.
@@ -74,6 +87,7 @@ LanguageModels/               the header-only library (organized as a VS project
     models/  normalizations/  pipelines/  tokenizers/  utilities/
 LanguageModels.Examples/      one driver per course stage, linked into one executable
 LanguageModels.Tests/         Google Test unit tests, mirroring include/
+LanguageModels.Cuda/          optional GPU code (CUDA), built as a static library
 resources/                    data files used by the examples
 Makefile                      Linux / WSL build (examples and tests)
 LanguageModels.sln            Visual Studio solution
@@ -113,6 +127,64 @@ make run ARGS=--quick    # build and run the examples
 make test                # build and run the unit tests
 make clean
 ```
+
+### CUDA (optional)
+
+`LanguageModels.Cuda` holds the code that runs on an NVIDIA GPU. It is optional and
+does not change how anything else builds. The design, kernels, measurements and checks
+are described in [docs/CUDA.md](docs/CUDA.md).
+
+- **Interface.** `include/cuda/CudaRuntime.h` and `CudaVocabularyHead.h` are plain C++
+  with no CUDA includes. `cuda::isAvailable()` tells you whether a GPU can be used; the
+  rest of the library falls back to the CPU when it cannot.
+- **What runs on the GPU.** Almost all of a Mini Transformer training step goes into work
+  that grows with the vocabulary: choosing the output word among tens of thousands, and
+  updating three tables of millions of numbers when a sentence touches a few dozen of them.
+  `cuda::VocabularyHead` keeps those parts on the GPU: the two embedding tables and the
+  output projection, with their gradients and Adam state. The small encoder and decoder
+  layers stay on the CPU, so a step moves only a few kilobytes between the two.
+  `MiniTransformer::trainStepCuda()` runs a step this way, and `ExecutionStrategy::Cuda`
+  selects it in a pipeline (the weights are copied back to the CPU model when training
+  ends, so translating and evaluating work as before).
+- **Speed.** One training step at the vocabulary of the full `fra.txt` (16,097 source and
+  30,152 target words), Release build, RTX 4060 Ti and a 16-thread CPU:
+
+  | | `double`, per step | `float`, per step | `float`, one epoch (191,351 pairs) |
+  |---|---|---|---|
+  | `trainStep`, one thread | 59 ms | 50 ms | about 2.7 hours |
+  | `trainStepMultipleThread`, 16 threads | 18 ms | 11 ms | about 36 minutes |
+  | `trainStepCuda`, on the GPU | 2.7 ms | 1.5 ms | about 4.7 minutes |
+
+  The GPU code follows the model's type: `MiniTransformer<float>` runs a `float` head,
+  which moves half as much memory and is where a GPU is fastest. The `float` model gives
+  up precision (about 7 digits instead of 16), so `trainStepCuda` and `trainStep` agree
+  to about 1e-4 instead of 1e-16, and `trainStepMultipleThread` is still bit-identical to
+  `trainStep`. Both models learn the same way in the tests.
+- **Results.** `trainStepCuda` matches `trainStep` to within rounding (about 1e-16 at first).
+  Training is chaotic, so two runs that are not bit-identical drift apart over a few hundred
+  steps, as a different compiler or thread order would also make them; both learn equally
+  well. `trainStepMultipleThread` is bit-identical to `trainStep`.
+- **Visual Studio.** With the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)
+  installed (`CUDA_PATH` set) and an x64 configuration, the `.cu` files are compiled by
+  `nvcc` through `LanguageModels.Cuda/nvcc-build.cmd`, for compute capability 8.9 by
+  default (an RTX 40 series card). Build for another GPU with
+  `/p:CudaComputeCapability=86`. No Visual Studio CUDA integration is needed. Without
+  the toolkit, or for Win32, a stand-in is built instead and the solution still builds.
+- **Toolset.** The project uses `v143` on purpose: `nvcc` of CUDA 13.0 does not accept
+  the newer `v145` compiler as its host compiler.
+- **Linux / WSL.** `make CUDA=1` (also for `tests` and `run`) compiles the GPU code with
+  `nvcc` (set `CUDA_PATH` and `CUDA_ARCH` if they differ from `/usr/local/cuda` and `89`).
+  Without `CUDA=1` the stand-in is used.
+- **Tests.** The CUDA tests print the GPU they ran on and report themselves skipped
+  where there is none, so the suite passes on every machine.
+- **Checking the kernels.** NVIDIA's `compute-sanitizer` (in the toolkit) finds what the
+  tests cannot, such as memory that is read before it is written, which usually happens
+  to hold zeros. It reports no errors for the GPU tests with `--tool memcheck`,
+  `--tool racecheck` and `--tool initcheck`:
+
+  ```
+  compute-sanitizer --tool initcheck bin\Debug\x64\LanguageModels.Tests.exe --gtest_filter=CudaVocabularyHead*
+  ```
 
 ### What the example program does
 
@@ -253,10 +325,12 @@ How it fits together:
   has seen the data, so each adapter builds its `WordTokenizer` or `CharTokenizer` from
   the training part only. Words and characters unseen in training become `<UNK>`, so
   held-out text is scored fairly and nothing leaks from the test set.
-- **`ExecutionStrategy`** is `Sequential` or `Parallel`. Only `MiniTransformer` acts on
-  it: `Parallel` calls `trainStepMultipleThread()` and `Sequential` calls `trainStep()`,
-  with bit-identical results. The other models accept it and train the same way. More
-  strategies can be added to the enum later.
+- **`ExecutionStrategy`** is `Sequential`, `Parallel` or `Cuda`. Only `MiniTransformer` acts
+  on it: `Sequential` calls `trainStep()`, `Parallel` calls `trainStepMultipleThread()`
+  (bit-identical results, several threads) and `Cuda` calls `trainStepCuda()` (results
+  equal to within rounding, the vocabulary-sized work on the GPU; it throws `CudaError`
+  when there is no CUDA device, see [CUDA](#cuda-optional)). The other models accept the
+  strategy and train the same way. More strategies can be added to the enum later.
 - **Logging.** Progress goes through `Logger` (`logger.info() << ...`), the same
   interface as the sibling MachineLearningModels project. The default logger is shared
   and writes to `std::clog`; pass your own to choose the level or the stream.

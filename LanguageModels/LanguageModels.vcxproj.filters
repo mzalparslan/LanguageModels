@@ -34,6 +34,9 @@
     <Filter Include="utilities">
       <UniqueIdentifier>{5d1c2e70-7a10-4f6b-9d0e-3b8f4a6c1d03}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cuda">
+      <UniqueIdentifier>{5d1c2e70-7a10-4f6b-9d0e-3b8f4a6c1d04}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\metrics\Metrics.h">
@@ -86,6 +89,12 @@
     </ClInclude>
     <ClInclude Include="include\pipelines\BertPipeline.h">
       <Filter>pipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cuda\CudaRuntime.h">
+      <Filter>cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cuda\CudaVocabularyHead.h">
+      <Filter>cuda</Filter>
     </ClInclude>
     <ClInclude Include="include\metrics\LogitMetrics.h">
       <Filter>metrics</Filter>

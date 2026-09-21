@@ -284,8 +284,9 @@ private:
 
 		// Bias-correction denominators depend only on timestep, so compute
 		// them once; a zero here would divide by zero for every weight.
-		auto biasCorrection1 = T(1) - std::pow(beta1, (double)adamT);
-		auto biasCorrection2 = T(1) - std::pow(beta2, (double)adamT);
+		// Worked out in double whatever T is, then rounded once to T.
+		const T biasCorrection1 = static_cast<T>(1.0 - std::pow(beta1, (double)adamT));
+		const T biasCorrection2 = static_cast<T>(1.0 - std::pow(beta2, (double)adamT));
 		validation::requireNonZeroDenominator(biasCorrection1, "Adam first-moment bias correction");
 		validation::requireNonZeroDenominator(biasCorrection2, "Adam second-moment bias correction");
 

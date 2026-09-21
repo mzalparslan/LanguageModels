@@ -20,6 +20,7 @@ INCLUDE_DIRS := \
 	-ILanguageModels/include/data \
 	-ILanguageModels/include/pipelines \
 	-ILanguageModels/include/utilities \
+	-ILanguageModels/include/cuda \
 	-ILanguageModels/include/normalizations \
 	-ILanguageModels/include/models \
 	-ILanguageModels/include/tokenizers \
@@ -47,7 +48,25 @@ TEST_OBJECTS := $(patsubst %.cpp,$(OBJECT_DIR)/%.o,$(TEST_SOURCES))
 # Google Test (e.g. `apt install libgtest-dev`).
 GTEST_LIBS ?= -lgtest_main -lgtest -pthread
 
-DEPENDENCY_FILES := $(EXAMPLE_OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d)
+# CUDA (optional): `make CUDA=1` compiles the GPU code with nvcc and links the CUDA
+# runtime; without it a stand-in reports CUDA as unavailable and everything else
+# builds and runs as before. CUDA_ARCH is the GPU's compute capability without the
+# dot (89 = RTX 40 series).
+CUDA ?= 0
+CUDA_PATH ?= /usr/local/cuda
+CUDA_ARCH ?= 89
+NVCC ?= $(CUDA_PATH)/bin/nvcc
+ifeq ($(CUDA),1)
+	CUDA_OBJECTS := $(OBJECT_DIR)/LanguageModels.Cuda/src/CudaRuntime.o \
+		$(OBJECT_DIR)/LanguageModels.Cuda/src/CudaVocabularyHead.o
+	CUDA_LIBS := -L$(CUDA_PATH)/lib64 -lcudart
+else
+	CUDA_OBJECTS := $(OBJECT_DIR)/LanguageModels.Cuda/src/CudaUnavailable.o \
+		$(OBJECT_DIR)/LanguageModels.Cuda/src/CudaVocabularyHeadUnavailable.o
+	CUDA_LIBS :=
+endif
+
+DEPENDENCY_FILES := $(EXAMPLE_OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d) $(CUDA_OBJECTS:.o=.d)
 
 .PHONY: all library examples tests test run clean help
 
@@ -71,17 +90,21 @@ test: $(TEST_NAME)
 run: examples
 	cd $(BINARY_DIR) && ./LanguageModels.Examples $(ARGS)
 
-$(EXAMPLE_NAME): $(EXAMPLE_OBJECTS)
+$(EXAMPLE_NAME): $(EXAMPLE_OBJECTS) $(CUDA_OBJECTS)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ $(CUDA_LIBS) -o $@
 
-$(TEST_NAME): $(TEST_OBJECTS)
+$(TEST_NAME): $(TEST_OBJECTS) $(CUDA_OBJECTS)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $^ $(GTEST_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $^ $(GTEST_LIBS) $(CUDA_LIBS) -o $@
 
 $(OBJECT_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(OBJECT_DIR)/%.o: %.cu
+	@mkdir -p $(dir $@)
+	$(NVCC) $(INCLUDE_DIRS) -std=c++20 -O2 -gencode arch=compute_$(CUDA_ARCH),code=sm_$(CUDA_ARCH) -c $< -o $@
 
 clean:
 	rm -rf build
@@ -93,6 +116,7 @@ help:
 	@echo "make run             Build and run it (full Mini Transformer dataset)"
 	@echo "make run ARGS=--quick   Same, with the small 100-pair dataset"
 	@echo "make tests           Build the Google Test executable"
+	@echo "make CUDA=1          Build with the GPU code (needs the CUDA Toolkit); also for tests and run"
 	@echo "make test            Build and run all tests"
 	@echo "make clean           Remove Makefile build outputs"
 

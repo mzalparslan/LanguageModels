@@ -66,7 +66,7 @@ public:
             for (std::size_t j = 0; j < d; j++) {
                 sumSq += x.data[i * d + j] * x.data[i * d + j];
             }
-            T rms = std::sqrt(sumSq / d + eps);
+            T rms = static_cast<T>(std::sqrt(sumSq / d + eps));
             // A NaN/Inf input shows up here; a zero rms would divide by zero.
             validation::requireFinite(rms, "RMSNorm root mean square");
             validation::requireNonZeroDenominator(rms, "RMSNorm root mean square");
@@ -101,7 +101,7 @@ public:
 
         for (std::size_t i = 0; i < seq; i++) {
             T rms = rmsCache.data[i];
-            T invRms = 1.0 / rms;
+            T invRms = T(1) / rms;
             T sumGradX = 0; // Dot product of (dout * w) and x
 
             // Pass 1: accumulate scale gradient and dot product that
@@ -118,7 +118,7 @@ public:
                 sumGradX += (dz * w) * inputCache.data[i * d + j];
             }
 
-            T val = sumGradX * (1.0 / (d * rms * rms)); // factor for dRMS/dx part
+            T val = sumGradX * static_cast<T>(1.0 / (d * rms * rms)); // factor for dRMS/dx part
 
             // Pass 2: dx_j = (dout_j * w_j) * invRms - x_j * val * invRms
             // This is simplified gradient form for RMSNorm

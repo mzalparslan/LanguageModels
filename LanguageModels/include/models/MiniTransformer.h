@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 
+#include "CudaVocabularyHead.h"
 #include "FeedForward.h"
 #include "AttentionHead.h"
 #include "RMSNorm.h"
@@ -115,18 +116,55 @@ private:
      */
     void forwardImpl(const std::vector<std::size_t>& src, const std::vector<std::size_t>& tgt,
         Tensor<T>& logits, std::size_t threads) {
+        requireValidSequences(src, tgt);
+
+        // Embed both sequences, run every layer up to the projection, then project.
+        Tensor<T> srcEmb, tgtEmb;
+        encEmb.forward(src, srcEmb);
+        decEmb.forward(tgt, tgtEmb);
+
+        forwardLayers(srcEmb, tgtEmb);
+
+        // Final Projection
+        // (Ideally we would have one more Norm here: decOut3 = Norm(decOut3))
+        if (threads > 1) {
+            proj.forwardParallel(decOut3, logits, threads);
+        }
+        else {
+            proj.forward(decOut3, logits);
+        }
+    }
+
+    /**
+     * @brief Requires a GPU head to have the sizes of this model.
+     */
+    void requireMatchingHead(const cuda::VocabularyHead<T>& head) const {
+        validation::requireSameSize(head.sourceVocab(), encEmb.vocabSize, "GPU head source vocabulary");
+        validation::requireSameSize(head.targetVocab(), decEmb.vocabSize, "GPU head target vocabulary");
+        validation::requireSameSize(head.width(), d_model, "GPU head width");
+    }
+
+    /**
+     * @brief Requires both sequences to be non-empty and within the maximum length.
+     */
+    static void requireValidSequences(const std::vector<std::size_t>& src, const std::vector<std::size_t>& tgt) {
         validation::requireNonEmpty(src.size(), "Source token sequence");
         validation::requireNonEmpty(tgt.size(), "Target token sequence");
         validation::requireAtMost(src.size(), MiniTransformerConfig::maxSeqLen, "Source sequence length");
         validation::requireAtMost(tgt.size(), MiniTransformerConfig::maxSeqLen, "Target sequence length");
+    }
 
+    /**
+     * @brief The encoder and decoder layers between the embeddings and the final
+     * projection: from the embedded source and target sequences to decOut3, the
+     * decoder output the projection turns into logits. Shared by every way of
+     * running a step (CPU, threads, GPU), which differ only in where the
+     * embeddings come from and where the projection runs.
+     */
+    void forwardLayers(const Tensor<T>& srcEmb, const Tensor<T>& tgtEmb) {
         // ==========================
         // 1. ENCODER
         // ==========================
-
-        // 1.0 Embed
-        Tensor<T> srcEmb;
-        encEmb.forward(src, srcEmb);
 
         // 1.1 Layer 1: Self-Attn
         // Pre-Norm: x = x + Attn(Norm(x))
@@ -160,10 +198,6 @@ private:
         // ==========================
         // 2. DECODER
         // ==========================
-
-        // 2.0 Embed
-        Tensor<T> tgtEmb;
-        decEmb.forward(tgt, tgtEmb);
 
         // 2.1 Layer 1: Masked Self-Attn
         decN1In = tgtEmb;
@@ -206,15 +240,138 @@ private:
         for (std::size_t i = 0; i < decOut3.size(); i++) {
             decOut3[i] = decN3In[i] + ffOut[i];
         }
+    }
 
-        // Final Projection
-        // (Ideally we would have one more Norm here: decOut3 = Norm(decOut3))
-        if (threads > 1) {
-            proj.forwardParallel(decOut3, logits, threads);
+    /**
+     * @brief The backward pass through the encoder and decoder layers: from the
+     * gradient at the decoder output (what the projection hands back) down to
+     * the gradients of the source and target embeddings, accumulating every
+     * layer's parameter gradients on the way. Uses what the last forward pass
+     * cached. Shared by every way of running a step (CPU, threads, GPU).
+     *
+     * @param dDecOut3 Gradient with respect to the decoder output [tgt, d_model].
+     * @param dSrcEmb Result: gradient with respect to the source embeddings.
+     * @param dTgtEmb Result: gradient with respect to the target embeddings.
+     */
+    void backwardLayers(const Tensor<T>& dDecOut3, Tensor<T>& dSrcEmb, Tensor<T>& dTgtEmb) {
+        // --- Decoder Layer 3: FF ---
+        // x = x + FF(Norm(x))
+        // d_x = d_out + Norm.back(FF.back(d_out))
+        Tensor<T> dNorm3Out; // Grad at output of Norm3 (input to FF)
+        ff.backward(dDecOut3, dNorm3Out); // FF.back takes gradient from "FF output side" (dDecOut3)
+
+        Tensor<T> dDecN3In; // Grad at input of Norm3
+        decNorm3.backward(dNorm3Out, dDecN3In);
+
+        // Residual Sum: dDecRes2 = dDecOut3 (skip) + dDecN3In (branch)
+        Tensor<T> dDecRes2(dDecOut3.shape);
+        for (std::size_t i = 0; i < dDecRes2.size(); i++) {
+            dDecRes2[i] = dDecOut3[i] + dDecN3In[i];
         }
-        else {
-            proj.forward(decOut3, logits);
+        // --- Decoder Layer 2: Cross Attn ---
+        // x = x + Attn(Norm(x), context)
+        Tensor<T> dNorm2Out;
+        Tensor<T> dEncOutCross, dEncOutCrossK; // Gradients w.r.t Encoder Outputs (K, V)
+        decAttn2.backward(dDecRes2, dNorm2Out, dEncOutCross, dEncOutCrossK);
+
+        Tensor<T> dDecN2In;
+        decNorm2.backward(dNorm2Out, dDecN2In);
+
+        // Residual Sum: dDecRes1 = dDecRes2 + dDecN2In
+        Tensor<T> dDecRes1(dDecRes2.shape);
+        for (std::size_t i = 0; i < dDecRes1.size(); i++) {
+            dDecRes1[i] = dDecRes2[i] + dDecN2In[i];
         }
+
+        // --- Decoder Layer 1: Masked Self Attn ---
+        Tensor<T> dNorm1Out, dDummyK, dDummyV;
+        decAttn1.backward(dDecRes1, dNorm1Out, dDummyK, dDummyV);
+        // Self-attention: Q, K, V all come from same source (dNorm1Out).
+        // AttentionHead::backward returns dQ_in (into dNorm1Out arg), dK_in, dV_in.
+        // We must sum them up.
+        for (std::size_t i = 0; i < dNorm1Out.size(); i++) {
+            dNorm1Out[i] += dDummyK[i] + dDummyV[i];
+        }
+
+        Tensor<T> dDecN1In;
+        decNorm1.backward(dNorm1Out, dDecN1In);
+
+        // Residual Sum: dTgtEmb = dDecRes1 + dDecN1In
+        dTgtEmb = Tensor<T>(dDecRes1.shape);
+        for (std::size_t i = 0; i < dTgtEmb.size(); i++) {
+            dTgtEmb[i] = dDecRes1[i] + dDecN1In[i];
+        }
+
+        // --- ENCODER BACKWARD ---
+        // Gradient from Cross Attn: dEncOut = dEncOutCross + dEncOutCrossK
+        Tensor<T> dEncOut(dEncOutCross.shape);
+        for (std::size_t i = 0; i < dEncOut.size(); i++) {
+            dEncOut[i] = dEncOutCross[i] + dEncOutCrossK[i];
+        }
+
+        // --- Encoder Layer 2: FF ---
+        Tensor<T> dEnorm2Out;
+        encFf.backward(dEncOut, dEnorm2Out);
+
+        Tensor<T> dEncN2In;
+        encNorm2.backward(dEnorm2Out, dEncN2In);
+
+        // Residual: dEncRes1 = dEncOut + dEncN2In
+        Tensor<T> dEncRes1(dEncOut.shape);
+        for (std::size_t i = 0; i < dEncRes1.size(); i++) {
+            dEncRes1[i] = dEncOut[i] + dEncN2In[i];
+        }
+
+        // --- Encoder Layer 1: Self Attn ---
+        Tensor<T> dEnorm1Out, dEsk, dEsv;
+        encAttn.backward(dEncRes1, dEnorm1Out, dEsk, dEsv);
+        for (std::size_t i = 0; i < dEnorm1Out.size(); i++) {
+            dEnorm1Out[i] += dEsk[i] + dEsv[i];
+        }
+
+        Tensor<T> dEncN1In;
+        encNorm1.backward(dEnorm1Out, dEncN1In);
+
+        // Residual: dSrcEmb = dEncRes1 + dEncN1In
+        dSrcEmb = Tensor<T>(dEncRes1.shape);
+        for (std::size_t i = 0; i < dSrcEmb.size(); i++) {
+            dSrcEmb[i] = dEncRes1[i] + dEncN1In[i];
+        }
+
+    }
+
+    /**
+     * @brief Clears the gradients of every small layer: everything except the two
+     * embedding tables and the projection, whose size depends on the vocabulary
+     * and which the different ways of running a step treat differently.
+     */
+    void zeroLayerGradients() {
+        encAttn.zeroGrad();
+        decAttn1.zeroGrad();
+        decAttn2.zeroGrad();
+        ff.zeroGrad();
+        encFf.zeroGrad();
+        encNorm1.zeroGrad();
+        encNorm2.zeroGrad();
+        decNorm1.zeroGrad();
+        decNorm2.zeroGrad();
+        decNorm3.zeroGrad();
+    }
+
+    /**
+     * @brief Applies the accumulated gradients of every small layer; see zeroLayerGradients().
+     */
+    void updateLayers(T lr, UpdateRule rule) {
+        encAttn.update(lr, rule);
+        decAttn1.update(lr, rule);
+        decAttn2.update(lr, rule);
+        ff.update(lr, rule);
+        encFf.update(lr, rule);
+        encNorm1.update(lr, rule);
+        encNorm2.update(lr, rule);
+        decNorm1.update(lr, rule);
+        decNorm2.update(lr, rule);
+        decNorm3.update(lr, rule);
     }
 
 public:
@@ -454,17 +611,8 @@ public:
         // embedding tables and projection are big ones.
         encEmb.zeroGradParallel(threads);
         decEmb.zeroGradParallel(threads);
-        encAttn.zeroGrad();
-        decAttn1.zeroGrad();
-        decAttn2.zeroGrad();
-        ff.zeroGrad();
-        encFf.zeroGrad();
         proj.zeroGradParallel(threads);
-        encNorm1.zeroGrad();
-        encNorm2.zeroGrad();
-        decNorm1.zeroGrad();
-        decNorm2.zeroGrad();
-        decNorm3.zeroGrad();
+        zeroLayerGradients();
 
         Tensor<T> logits;
         forwardImpl(src, tgt, logits, threads);
@@ -530,108 +678,121 @@ public:
         Tensor<T> dDecOut3;
         proj.backwardParallel(dlogits, dDecOut3, threads);
 
-        // --- Decoder Layer 3: FF ---
-        // x = x + FF(Norm(x))
-        // d_x = d_out + Norm.back(FF.back(d_out))
-        Tensor<T> dNorm3Out; // Grad at output of Norm3 (input to FF)
-        ff.backward(dDecOut3, dNorm3Out); // FF.back takes gradient from "FF output side" (dDecOut3)
-
-        Tensor<T> dDecN3In; // Grad at input of Norm3
-        decNorm3.backward(dNorm3Out, dDecN3In);
-
-        // Residual Sum: dDecRes2 = dDecOut3 (skip) + dDecN3In (branch)
-        Tensor<T> dDecRes2(dDecOut3.shape);
-        for (std::size_t i = 0; i < dDecRes2.size(); i++) {
-            dDecRes2[i] = dDecOut3[i] + dDecN3In[i];
-        }
-        // --- Decoder Layer 2: Cross Attn ---
-        // x = x + Attn(Norm(x), context)
-        Tensor<T> dNorm2Out;
-        Tensor<T> dEncOutCross, dEncOutCrossK; // Gradients w.r.t Encoder Outputs (K, V)
-        decAttn2.backward(dDecRes2, dNorm2Out, dEncOutCross, dEncOutCrossK);
-
-        Tensor<T> dDecN2In;
-        decNorm2.backward(dNorm2Out, dDecN2In);
-
-        // Residual Sum: dDecRes1 = dDecRes2 + dDecN2In
-        Tensor<T> dDecRes1(dDecRes2.shape);
-        for (std::size_t i = 0; i < dDecRes1.size(); i++) {
-            dDecRes1[i] = dDecRes2[i] + dDecN2In[i];
-        }
-
-        // --- Decoder Layer 1: Masked Self Attn ---
-        Tensor<T> dNorm1Out, dDummyK, dDummyV;
-        decAttn1.backward(dDecRes1, dNorm1Out, dDummyK, dDummyV);
-        // Self-attention: Q, K, V all come from same source (dNorm1Out).
-        // AttentionHead::backward returns dQ_in (into dNorm1Out arg), dK_in, dV_in.
-        // We must sum them up.
-        for (std::size_t i = 0; i < dNorm1Out.size(); i++) {
-            dNorm1Out[i] += dDummyK[i] + dDummyV[i];
-        }
-
-        Tensor<T> dDecN1In;
-        decNorm1.backward(dNorm1Out, dDecN1In);
-
-        // Residual Sum: dTgtEmb = dDecRes1 + dDecN1In
-        Tensor<T> dTgtEmb(dDecRes1.shape);
-        for (std::size_t i = 0; i < dTgtEmb.size(); i++) {
-            dTgtEmb[i] = dDecRes1[i] + dDecN1In[i];
-        }
-
+        // Backward through the layers down to the embeddings (shared with the other ways of running a step).
+        Tensor<T> dSrcEmb, dTgtEmb;
+        backwardLayers(dDecOut3, dSrcEmb, dTgtEmb);
         decEmb.backward(tgt, dTgtEmb);
-        // --- ENCODER BACKWARD ---
-        // Gradient from Cross Attn: dEncOut = dEncOutCross + dEncOutCrossK
-        Tensor<T> dEncOut(dEncOutCross.shape);
-        for (std::size_t i = 0; i < dEncOut.size(); i++) {
-            dEncOut[i] = dEncOutCross[i] + dEncOutCrossK[i];
-        }
-
-        // --- Encoder Layer 2: FF ---
-        Tensor<T> dEnorm2Out;
-        encFf.backward(dEncOut, dEnorm2Out);
-
-        Tensor<T> dEncN2In;
-        encNorm2.backward(dEnorm2Out, dEncN2In);
-
-        // Residual: dEncRes1 = dEncOut + dEncN2In
-        Tensor<T> dEncRes1(dEncOut.shape);
-        for (std::size_t i = 0; i < dEncRes1.size(); i++) {
-            dEncRes1[i] = dEncOut[i] + dEncN2In[i];
-        }
-
-        // --- Encoder Layer 1: Self Attn ---
-        Tensor<T> dEnorm1Out, dEsk, dEsv;
-        encAttn.backward(dEncRes1, dEnorm1Out, dEsk, dEsv);
-        for (std::size_t i = 0; i < dEnorm1Out.size(); i++) {
-            dEnorm1Out[i] += dEsk[i] + dEsv[i];
-        }
-
-        Tensor<T> dEncN1In;
-        encNorm1.backward(dEnorm1Out, dEncN1In);
-
-        // Residual: dSrcEmb = dEncRes1 + dEncN1In
-        Tensor<T> dSrcEmb(dEncRes1.shape);
-        for (std::size_t i = 0; i < dSrcEmb.size(); i++) {
-            dSrcEmb[i] = dEncRes1[i] + dEncN1In[i];
-        }
-
         encEmb.backward(src, dSrcEmb);
 
         // Update All: every layer applies its accumulated gradients. big
         // tables are updated by several threads.
         encEmb.updateParallel(lr, rule, threads);
         decEmb.updateParallel(lr, rule, threads);
-        encAttn.update(lr, rule);
-        decAttn1.update(lr, rule);
-        decAttn2.update(lr, rule);
-        ff.update(lr, rule);
-        encFf.update(lr, rule);
         proj.updateParallel(lr, rule, threads);
-        encNorm1.update(lr, rule);
-        encNorm2.update(lr, rule);
-        decNorm1.update(lr, rule);
-        decNorm2.update(lr, rule);
-        decNorm3.update(lr, rule);
+        updateLayers(lr, rule);
+
+        return loss;
+    }
+
+    /**
+     * @brief Copies the vocabulary-sized parameters (the two embedding tables and the
+     * output projection) to the GPU, and returns the object that holds them there.
+     *
+     * Pass the result to trainStepCuda() for every step of a training run, and call
+     * downloadFromCudaHead() when the run is over. While training on the GPU the
+     * copy in this model goes stale: do not use forward(), generate() or the other
+     * training steps until the weights have been downloaded.
+     *
+     * @throws CudaError If CUDA is not available or the GPU runs out of memory.
+     */
+    cuda::VocabularyHead<T> createCudaHead() const {
+        cuda::VocabularyHead<T> head(encEmb.vocabSize, decEmb.vocabSize, d_model);
+        head.uploadWeights(encEmb.table.value.data, decEmb.table.value.data, proj.W.value.data, proj.b.value.data);
+        return head;
+    }
+
+    /**
+     * @brief Copies the trained vocabulary-sized parameters back from the GPU into this
+     * model, so it can be used on the CPU again.
+     *
+     * Adam's moment estimates are not copied back: those of the downloaded
+     * parameters are cleared here, so a later Adam step on the CPU starts them fresh
+     * instead of mixing in state from before the GPU run.
+     *
+     * @param head The head made by createCudaHead() for this model.
+     */
+    void downloadFromCudaHead(const cuda::VocabularyHead<T>& head) {
+        requireMatchingHead(head);
+        head.downloadWeights(encEmb.table.value.data, decEmb.table.value.data, proj.W.value.data, proj.b.value.data);
+        for (Parameter<T>* parameter : { &encEmb.table, &decEmb.table, &proj.W, &proj.b }) {
+            parameter->firstMoment = Tensor<T>();
+            parameter->secondMoment = Tensor<T>();
+        }
+    }
+
+    /**
+     * @brief trainStep() with the vocabulary-sized work on the GPU.
+     *
+     * The two embedding tables and the output projection, with their gradients and
+     * Adam state, live in `head`: the embeddings are looked up there, the output
+     * layer (the scores of every target word, the softmax, the loss and the
+     * projection's backward pass) runs there, and so does the update of those three
+     * parameters. The small encoder and decoder layers stay on the CPU, so a step
+     * moves only a few kilobytes between the two.
+     *
+     * It is the same training step as trainStep(), to within rounding: the GPU sums in
+     * a different order (and, for a float model, in float), so the results are close
+     * but not bit-identical.
+     *
+     * @param head The GPU parameters, from createCudaHead().
+     * @param src Source token ids.
+     * @param tgt Decoder input ids.
+     * @param label Expected next-token ids, one per decoder position.
+     * @param lr Learning rate.
+     * @param rule Optimizer to apply (e.g. UpdateRule::adam(step)).
+     * @return Summed cross-entropy loss over target positions.
+     * @throws The same exceptions as trainStep(), and CudaError if a CUDA call fails.
+     */
+    T trainStepCuda(cuda::VocabularyHead<T>& head,
+        const std::vector<std::size_t>& src,
+        const std::vector<std::size_t>& tgt,
+        const std::vector<std::size_t>& label,
+        T lr, UpdateRule rule)
+    {
+        validation::requirePositiveFinite(lr, "Learning rate");
+        validation::requireSameSize(label.size(), tgt.size(), "Label sequence");
+        requireValidSequences(src, tgt);
+        requireMatchingHead(head);
+
+        // Zero Gradients: backward passes accumulate, so start clean.
+        head.zeroGradients();
+        zeroLayerGradients();
+
+        // The embeddings come from the GPU's tables.
+        Tensor<T> srcEmb({ src.size(), d_model });
+        Tensor<T> tgtEmb({ tgt.size(), d_model });
+        head.lookupSource(src, srcEmb.data);
+        head.lookupTarget(tgt, tgtEmb.data);
+
+        forwardLayers(srcEmb, tgtEmb);
+
+        // Output layer on the GPU: scores, softmax, loss, and the gradient handed back to the decoder.
+        Tensor<T> dDecOut3(decOut3.shape);
+        const T loss = head.outputLayer(decOut3.data, label, dDecOut3.data);
+
+        Tensor<T> dSrcEmb, dTgtEmb;
+        backwardLayers(dDecOut3, dSrcEmb, dTgtEmb);
+        head.accumulateTargetGradient(tgt, dTgtEmb.data);
+        head.accumulateSourceGradient(src, dSrcEmb.data);
+
+        // Update All: the big tables on the GPU, the small layers here.
+        if (rule.kind == OptimizerKind::Adam) {
+            head.updateAdam(lr, rule.step);
+        }
+        else {
+            head.updateSgd(lr);
+        }
+        updateLayers(lr, rule);
 
         return loss;
     }
