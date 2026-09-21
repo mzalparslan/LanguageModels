@@ -4,8 +4,8 @@
 #include <cmath>
 #include <limits>
 
-// The *Parallel methods must give bit-identical results to their sequential
-// counterparts, whatever the thread count, so these tests compare exactly (no
+// *Parallel methods must give bit-identical results to their sequential
+// counterparts, whatever thread count, so these tests compare exactly (no
 // tolerance).
 
 namespace {

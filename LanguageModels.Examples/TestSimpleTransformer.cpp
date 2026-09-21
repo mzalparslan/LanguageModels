@@ -82,7 +82,7 @@ int testSimpleSet() {
         {"i love code", "<SOS> j'aime le code <EOS>"}
     };
 
-    // 2. Tokenizers: one vocabulary per language, built from the dataset itself.
+    // 2. Tokenizers: one vocabulary per language, built from dataset itself.
     SimpleTokenizer encoderTokenizer, decoderTokenizer;
     for (auto& sentencePair : data) {
         encoderTokenizer.add(sentencePair.first);
@@ -92,7 +92,7 @@ int testSimpleSet() {
     std::cout << "Src Vocab: " << encoderTokenizer.vocabSize << "\n";
     std::cout << "Tgt Vocab: " << decoderTokenizer.vocabSize << "\n";
 
-    // 3. Model: vocabulary sizes set the embedding tables and the output width.
+    // 3. Model: vocabulary sizes set embedding tables and output width.
     MiniTransformer<double> model(encoderTokenizer.vocabSize, decoderTokenizer.vocabSize);
     double learningRate = 0.005;
 
@@ -150,7 +150,7 @@ int testSimpleSet() {
             std::size_t seqLen = logits.shape[0];
             std::size_t outputVocabSize = logits.shape[1];
 
-            // Arg-max over the vocabulary: the word with the highest score wins.
+            // Arg-max over vocabulary: word with highest score wins.
             std::size_t bestId = 0;
             double maxVal = -1e9;
             for (std::size_t wordId = 0; wordId < outputVocabSize; wordId++) {

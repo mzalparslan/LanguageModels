@@ -30,7 +30,7 @@ namespace evaluation {
 	 * trimming punctuation from both ends of each word.
 	 *
 	 * A deliberately simple tokenizer for scoring: "Party." and "party"
-	 * become the same word. Use your own tokenizer when the task needs one.
+	 * become same word. Use your own tokenizer when task needs one.
 	 */
 	inline Tokens splitWords(const std::string& text) {
 		Tokens words;
@@ -66,11 +66,11 @@ namespace evaluation {
 
 	/**
 	 * @brief Levenshtein distance: fewest insertions, deletions and
-	 * substitutions that turn one sequence into the other.
+	 * substitutions that turn one sequence into other.
 	 */
 	template <typename T>
 	std::size_t editDistance(const std::vector<T>& a, const std::vector<T>& b) {
-		// One row of the classic dynamic-programming table at a time.
+		// One row of classic dynamic-programming table at a time.
 		std::vector<std::size_t> previous(b.size() + 1);
 		std::vector<std::size_t> current(b.size() + 1);
 		for (std::size_t j = 0; j <= b.size(); j++) {
@@ -99,9 +99,9 @@ namespace evaluation {
 	/**
 	 * @brief Word error rate: word-level edit distance divided by the
 	 * reference length. 0 is a perfect match; it can exceed 1 when the
-	 * hypothesis is much longer than the reference.
+	 * hypothesis is much longer than reference.
 	 *
-	 * @throws DivisionByZeroError If the reference is empty.
+	 * @throws DivisionByZeroError If reference is empty.
 	 */
 	inline double wordErrorRate(const Tokens& reference, const Tokens& hypothesis) {
 		validation::requireNonZeroDenominator(reference.size(), "Reference word count");
@@ -111,9 +111,9 @@ namespace evaluation {
 
 	/**
 	 * @brief Character error rate: character-level edit distance divided by
-	 * the reference length.
+	 * reference length.
 	 *
-	 * @throws DivisionByZeroError If the reference is empty.
+	 * @throws DivisionByZeroError If reference is empty.
 	 */
 	inline double characterErrorRate(const std::string& reference, const std::string& hypothesis) {
 		validation::requireNonZeroDenominator(reference.size(), "Reference character count");
@@ -127,7 +127,7 @@ namespace evaluation {
 	class BleuScore {
 	public:
 		/**
-		 * @brief The score, from 0 to 1. 0 when any n-gram precision is 0
+		 * @brief score, from 0 to 1. 0 when any n-gram precision is 0
 		 * (unless smoothing was requested).
 		 */
 		double bleu = 0.0;
@@ -144,7 +144,7 @@ namespace evaluation {
 		 */
 		std::size_t candidateLength = 0;
 		/**
-		 * @brief Total length of the closest-length reference of each candidate.
+		 * @brief Total length of closest-length reference of each candidate.
 		 */
 		std::size_t referenceLength = 0;
 	};
@@ -192,17 +192,17 @@ namespace evaluation {
 
 	/**
 	 * @brief Corpus-level BLEU: n-gram matches and lengths are summed over the
-	 * whole corpus before the ratios are taken, which is how BLEU is
-	 * normally reported (averaging per-sentence scores is not the same).
+	 * whole corpus before ratios are taken, which is how BLEU is
+	 * normally reported (averaging per-sentence scores is not same).
 	 *
 	 * Precision counts are clipped: an n-gram is credited at most as often as
-	 * it appears in a single reference. The brevity penalty uses the
+	 * it appears in a single reference. brevity penalty uses the
 	 * reference length closest to each candidate (the shorter one on a tie).
 	 *
 	 * @param candidates One generated sentence per example.
 	 * @param references For each candidate, one or more reference sentences.
 	 * @param maxN Highest n-gram order; 4 is standard (BLEU-4).
-	 * @param smooth Add 1 to the matches and totals of orders above 1, so a
+	 * @param smooth Add 1 to matches and totals of orders above 1, so a
 	 * sentence without a matching 4-gram scores above 0 instead of exactly 0
 	 * (Lin and Och's smoothing).
 	 * @throws InvalidSizeError If there are no candidates, or references differs in
@@ -240,7 +240,7 @@ namespace evaluation {
 				totals[n - 1] += candidate.size() >= n ? candidate.size() - n + 1 : 0;
 			}
 
-			// Reference whose length is closest to the candidate's (shorter on a tie).
+			// Reference whose length is closest to candidate's (shorter on a tie).
 			std::size_t closest = references[i][0].size();
 			for (const Tokens& reference : references[i]) {
 				const std::size_t distance = reference.size() > candidate.size()
@@ -309,11 +309,11 @@ namespace evaluation {
 	class OverlapScore {
 	public:
 		/**
-		 * @brief Share of the candidate that appears in the reference.
+		 * @brief Share of candidate that appears in reference.
 		 */
 		double precision = 0.0;
 		/**
-		 * @brief Share of the reference that appears in the candidate.
+		 * @brief Share of reference that appears in candidate.
 		 */
 		double recall = 0.0;
 		/**
@@ -322,7 +322,7 @@ namespace evaluation {
 		double f1 = 0.0;
 
 		/**
-		 * @brief Builds a score from an overlap size and the two lengths.
+		 * @brief Builds a score from an overlap size and two lengths.
 		 * Every ratio is 0 when its denominator is 0.
 		 */
 		static OverlapScore fromCounts(std::size_t overlap, std::size_t candidateSize,
@@ -357,8 +357,8 @@ namespace evaluation {
 	}
 
 	/**
-	 * @brief ROUGE-L (Lin, 2004): based on the longest common subsequence,
-	 * so it rewards words that appear in the same order without needing
+	 * @brief ROUGE-L (Lin, 2004): based on longest common subsequence,
+	 * so it rewards words that appear in same order without needing
 	 * them to be adjacent.
 	 */
 	inline OverlapScore rougeL(const Tokens& candidate, const Tokens& reference) {

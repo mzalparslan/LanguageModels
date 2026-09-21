@@ -46,7 +46,7 @@ TEST(LinearLayerTest, WeightScaleFollowsHeInitialization) {
 
     LinearLayer<double> layer(dIn, 100, rng);
 
-    // He init: weights ~ N(0, 2 / dIn), so the sample variance is near 0.02.
+    // He init: weights ~ N(0, 2 / dIn), so sample variance is near 0.02.
     double sumSquares = 0.0;
     for (std::size_t i = 0; i < layer.W.value.size(); i++) {
         sumSquares += layer.W.value[i] * layer.W.value[i];

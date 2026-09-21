@@ -19,7 +19,7 @@
  * stacks numLayers decoder blocks of type BlockT, then projects back to
  * vocabulary logits through a final norm + linear head.
  *
- * See models/BasicGPT.h and models/BasicGPTWithMoE.h for the thin named
+ * See models/BasicGPT.h and models/BasicGPTWithMoE.h for thin named
  * aliases built on top of this, each just fixing BlockT and Config.
  *
  * @tparam T Floating-point mode.
@@ -61,8 +61,8 @@ public:
      * @param blockArgs Forwarded to each layer's constructor after
      * (dim, dim * 4, rng) -- e.g. (useMoe, numExperts, topK[, numHeads]),
      * matching whichever BlockT this model was instantiated with.
-     * @throws InvalidParameterSizeError If the vocabulary, width, layer count or
-     * context length is zero, or the context length exceeds Config::maxSeqLen.
+     * @throws InvalidParameterSizeError If vocabulary, width, layer count or
+     * context length is zero, or context length exceeds Config::maxSeqLen.
      */
     template <typename... BlockArgs>
         requires std::constructible_from<BlockT, std::size_t, std::size_t, RandomEngine&, BlockArgs&...>
@@ -77,8 +77,8 @@ public:
      * @param x Token ids [seq].
      * @param logits Output [seq, vocabSize]; row i scores token that
      * follows position i.
-     * @throws InvalidSizeError If x is empty or longer than the context length.
-     * @throws InvalidParameterError If a token id is outside the vocabulary.
+     * @throws InvalidSizeError If x is empty or longer than context length.
+     * @throws InvalidParameterError If a token id is outside vocabulary.
      */
     void forward(const std::vector<std::size_t>& x, Tensor<T>& logits) {
         validation::requireNonEmpty(x.size(), "Input token sequence");
@@ -112,9 +112,9 @@ public:
      * @param lr Learning rate.
      * @return Mean cross-entropy over sequence, plus MoE auxiliary
      * loss when block type tracks one.
-     * @throws InvalidParameterError If lr <= 0, or a target id is outside the vocabulary.
+     * @throws InvalidParameterError If lr <= 0, or a target id is outside vocabulary.
      * @throws InvalidSizeError If targets and x differ in length.
-     * @throws NaNError, NonFiniteError If the loss is not finite.
+     * @throws NaNError, NonFiniteError If loss is not finite.
      */
     T trainStep(const std::vector<std::size_t>& x, const std::vector<std::size_t>& targets, T lr) {
         validation::requirePositiveFinite(lr, "Learning rate");
@@ -214,16 +214,16 @@ public:
      * @brief Scores model on a sequence without changing its weights: how well
      * position i's output predicts token targets[i].
      *
-     * For a text longer than the context length, score it in windows with
+     * For a text longer than context length, score it in windows with
      * evaluation::MetricsAccumulator and this model's forward().
      *
      * @param x Input token ids [seq].
      * @param targets Expected next-token id for each position [seq].
      * @return Loss, perplexity, next-token accuracy and bits per token.
      * @throws InvalidSizeError If targets and x differ in length, or x is empty
-     * or longer than the context length.
-     * @throws InvalidParameterError If a token id is outside the vocabulary.
-     * @throws NonFiniteError If the loss is infinite.
+     * or longer than context length.
+     * @throws InvalidParameterError If a token id is outside vocabulary.
+     * @throws NonFiniteError If loss is infinite.
      */
     Metrics evaluate(const std::vector<std::size_t>& x, const std::vector<std::size_t>& targets) {
         validation::requireSameSize(targets.size(), x.size(), "Target sequence");
@@ -240,12 +240,12 @@ public:
      * @param startTokens Prompt token ids; must not be empty.
      * @param maxNewTokens Number of tokens to append.
      * @return prompt followed by generated tokens.
-     * @throws InvalidSizeError If the prompt is empty, or the prompt plus the
-     * generated tokens would exceed the context length.
+     * @throws InvalidSizeError If prompt is empty, or prompt plus the
+     * generated tokens would exceed context length.
      */
     std::vector<std::size_t> generate(const std::vector<std::size_t>& startTokens, std::size_t maxNewTokens) {
         validation::requireNonEmpty(startTokens.size(), "Prompt");
-        // The last forward pass sees the prompt plus all but the final new token.
+        // last forward pass sees prompt plus all but final new token.
         if (maxNewTokens > 0) {
             validation::requireAtMost(startTokens.size() + maxNewTokens - 1, maxLen,
                 "Prompt length plus generated tokens");

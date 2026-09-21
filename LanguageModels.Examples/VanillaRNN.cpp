@@ -48,7 +48,7 @@ int testVanilla() {
     std::size_t windowStart = 0; 
     std::vector<double> hiddenPrev = rnn.getZeroState();
 
-    // Train for 101 iterations, sliding a window over the text (about 10 passes).
+    // Train for 101 iterations, sliding a window over text (about 10 passes).
     for (int iteration = 0; iteration < 101; ++iteration) {
         // Prepare inputs (X) and targets (Y): target for each character
         // is character that follows it. When window would run past the
@@ -68,7 +68,7 @@ int testVanilla() {
         // Forward + Backward + Update (hiddenPrev is advanced to final state)
         double loss = rnn.trainStep(inputs, targets, hiddenPrev, learningRate);
 
-        // Every 10 iterations: report the metrics and show what the model predicts.
+        // Every 10 iterations: report metrics and show what model predicts.
         if (iteration % 10 == 0) {
             auto metrics = rnn.evaluate(inputs, targets, hiddenPrevBackup);
             std::cout << "Iter " << iteration
@@ -104,7 +104,7 @@ int testVanilla() {
             std::cout << "Input:  [" << inputStr << "]\n";
             std::cout << "Target: [" << targetStr << "]\n";
             std::cout << "Pred:   [" << predStr << "]\n";
-            // Sample: let the model generate 20 characters from its current state.
+            // Sample: let model generate 20 characters from its current state.
             std::vector<std::size_t> sampleIndices = rnn.sample(hiddenPrev, inputs[0], 20);
             std::string sampleText = "";
             for (std::size_t charIndex : sampleIndices) {

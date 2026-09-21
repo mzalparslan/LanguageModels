@@ -32,7 +32,7 @@ namespace {
     }
 
     // Scores a long text in windows (a recurrent model's forward pass keeps one
-    // entry per step, so 100k steps at once is wasteful), pooling the totals.
+    // entry per step, so 100k steps at once is wasteful), pooling totals.
     Metrics evaluateInWindows(VanillaRNN<double>& rnn, const std::vector<int>& ids,
         std::size_t chars, std::size_t window) {
         double totalLoss = 0;
@@ -52,18 +52,18 @@ namespace {
 }
 
 /**
- * @brief Demo stage: the standard character-level benchmark. Loads Tiny
+ * @brief Demo stage: standard character-level benchmark. Loads Tiny
  * Shakespeare, checks it against its published size and alphabet, then scores
  * a character RNN on held-out text next to baselines whose perplexity is
  * known: a uniform guess, letter frequencies (unigram) and one character of
- * context (bigram). A model worth keeping has to beat the baselines.
+ * context (bigram). A model worth keeping has to beat baselines.
  *
- * @return 0 on completion, 1 if the data file is missing.
+ * @return 0 on completion, 1 if data file is missing.
  */
 int testTinyShakespeare() {
     std::ifstream file("tinyshakespeare.txt", std::ios::binary);
     if (!file) {
-        std::cout << "tinyshakespeare.txt not found next to the executable (it lives in resources/).\n";
+        std::cout << "tinyshakespeare.txt not found next to executable (it lives in resources/).\n";
         return 1;
     }
     std::ostringstream contents;
@@ -91,7 +91,7 @@ int testTinyShakespeare() {
     const std::size_t evalChars = useQuickDataset ? 20000 : ids.size() - cut;
     std::vector<int> validation(ids.begin() + cut, ids.begin() + cut + evalChars);
 
-    // Baselines: counted from the training part, scored on the validation part.
+    // Baselines: counted from training part, scored on validation part.
     std::vector<std::size_t> trainIds(ids.begin(), ids.begin() + cut);
     std::vector<std::size_t> validationIds(validation.begin(), validation.end());
     NGramBaseline unigram(vocab, 1, 1.0);
@@ -99,12 +99,12 @@ int testTinyShakespeare() {
     unigram.train(trainIds);
     bigram.train(trainIds);
 
-    // Train the character RNN with plain SGD in windows of 25 characters,
-    // carrying the hidden state from window to window.
+    // Train character RNN with plain SGD in windows of 25 characters,
+    // carrying hidden state from window to window.
     const std::size_t hiddenSize = 64;
     const std::size_t window = 25;
     const double learningRate = 0.01;
-    // The full run makes about one pass over the training text (50000 x 25 characters).
+    // full run makes about one pass over training text (50000 x 25 characters).
     const int iterations = useQuickDataset ? 2000 : 50000;
     VanillaRNN<double> rnn(hiddenSize, vocab);
     std::vector<double> hidden = rnn.getZeroState();
@@ -147,9 +147,9 @@ int testTinyShakespeare() {
     printRow("Bigram (1 char of context)", bigramMetrics);
     printRow("Character RNN (trained here)", rnnMetrics);
 
-    std::cout << "\nRNN beats the uniform guess: " << (rnnMetrics.perplexity < uniform.perplexity ? "yes" : "NO")
-        << "\nRNN beats the unigram baseline: " << (rnnMetrics.perplexity < unigramMetrics.perplexity ? "yes" : "no")
-        << "\nRNN beats the bigram baseline: " << (rnnMetrics.perplexity < bigramMetrics.perplexity ? "yes" : "no")
+    std::cout << "\nRNN beats uniform guess: " << (rnnMetrics.perplexity < uniform.perplexity ? "yes" : "NO")
+        << "\nRNN beats unigram baseline: " << (rnnMetrics.perplexity < unigramMetrics.perplexity ? "yes" : "no")
+        << "\nRNN beats bigram baseline: " << (rnnMetrics.perplexity < bigramMetrics.perplexity ? "yes" : "no")
         << "\n";
     return 0;
 }

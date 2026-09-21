@@ -132,7 +132,7 @@ std::vector<std::pair<std::string, std::string>> loadDataset(const std::string& 
     return data;
 }
 
-// Set by main() when --quick is passed: use the small debug dataset.
+// Set by main() when --quick is passed: use small debug dataset.
 extern bool useQuickDataset;
 
 /**
@@ -145,7 +145,7 @@ extern bool useQuickDataset;
  * and are translated poorly; this stage demonstrates training loop and
  * decoders, not generalization.
  *
- * Uses the full fra.txt unless the executable was started with --quick
+ * Uses full fra.txt unless executable was started with --quick
  * (see useQuickDataset).
  *
  * @return 0 on completion, -1 if dataset could not be loaded.
@@ -155,8 +155,8 @@ int testFraEngTranslation() {
     std::vector<std::pair<std::string, std::string>> data;
 
     // Try Data Load
-    // By default the full fra.txt is used: up to 5000 pairs, which is a
-    // ~1.5-2hr training run. Running the executable with --quick selects
+    // By default full fra.txt is used: up to 5000 pairs, which is a
+    // ~1.5-2hr training run. Running executable with --quick selects
     // fra_debug.txt (100 pairs) for fast iteration instead.
     const char* datasetPath = useQuickDataset ? "fra_debug.txt" : "fra.txt";
     data = loadDataset(datasetPath, 5000); // Load up to 5000 pairs
@@ -177,7 +177,7 @@ int testFraEngTranslation() {
     std::cout << "Src Vocab: " << encoderTokenizer.vocabSize << "\n";
     std::cout << "Tgt Vocab: " << decoderTokenizer.vocabSize << "\n";
 
-    // 3. Model: vocabulary sizes set the embedding tables and the output width.
+    // 3. Model: vocabulary sizes set embedding tables and output width.
     // RoPE is always used for positions.
     MiniTransformer<double> model(encoderTokenizer.vocabSize, decoderTokenizer.vocabSize);
     double learningRate = 0.001; // Adam typically uses lower LR than SGD
@@ -220,7 +220,7 @@ int testFraEngTranslation() {
             adamStep++;
         }
 
-        // Log the average per-sentence loss every 100 epochs.
+        // Log average per-sentence loss every 100 epochs.
         if (epoch % 100 == 0) {
             std::cout << "100 x Epoch Elapsed time: " << epochTimer.stop() << " ms" << std::endl;
             epochTimer.start();
@@ -231,8 +231,8 @@ int testFraEngTranslation() {
     // Ignore last batch's benchmark.
     (void)epochTimer.stop();
     
-    // Decoding lives in the model and works on token ids; the tokenizer only
-    // supplies the ids of the start and end words and turns ids back into text.
+    // Decoding lives in model and works on token ids; tokenizer only
+    // supplies ids of start and end words and turns ids back into text.
     const std::size_t startId = decoderTokenizer.wordToId["<SOS>"];
     const std::size_t endId = decoderTokenizer.wordToId["<EOS>"];
     const std::size_t maxNewWords = 10;

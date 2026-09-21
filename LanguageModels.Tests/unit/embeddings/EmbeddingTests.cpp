@@ -62,7 +62,7 @@ TEST(EmbeddingTest, BackwardAccumulatesIntoTheRowsThatWereUsed) {
 
     embedding.backward({ 1, 3, 1 }, dOut);
 
-    // Token 1 appears twice, so its gradient is the sum of two rows.
+    // Token 1 appears twice, so its gradient is sum of two rows.
     EXPECT_DOUBLE_EQ(embedding.table.grad[1 * 2 + 0], 101.0);
     EXPECT_DOUBLE_EQ(embedding.table.grad[1 * 2 + 1], 202.0);
     EXPECT_DOUBLE_EQ(embedding.table.grad[3 * 2 + 0], 10.0);

@@ -77,7 +77,7 @@ public:
 		// Each id selects one row of table; nothing is computed, only copied.
 		for (std::size_t i = 0; i < seq; i++) {
 			std::size_t idx = x[i];
-			// An id past the table would read outside it.
+			// An id past table would read outside it.
 			validation::requireBelow(idx, vocabSize, "Token id");
 			// Consumes a sequence of IDs and produces a sequence of vectors.
 			// logic: look-up row x[i] in table and copy it to out[i].
@@ -136,7 +136,7 @@ public:
 	 * @brief zeroGrad() spread over several threads (the table has a row for
 	 * every word, so for a large vocabulary clearing it takes a while).
 	 *
-	 * @param threads Most threads to use; 1 is the same as zeroGrad().
+	 * @param threads Most threads to use; 1 is same as zeroGrad().
 	 */
 	void zeroGradParallel(std::size_t threads) {
 		table.zeroGradParallel(threads);
@@ -145,7 +145,7 @@ public:
 	/**
 	 * @brief update() spread over several threads; bit-identical result.
 	 *
-	 * @param threads Most threads to use; 1 is the same as update().
+	 * @param threads Most threads to use; 1 is same as update().
 	 * @see Parameter::updateParallel
 	 */
 	void updateParallel(T lr, UpdateRule rule, std::size_t threads) {

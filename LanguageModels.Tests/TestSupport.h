@@ -1,7 +1,7 @@
 //
 // TestSupport.h
 //
-// Helpers shared by the unit tests: tensor construction/comparison,
+// Helpers shared by unit tests: tensor construction/comparison,
 // finite-difference gradient checking and console silencing.
 //
 
@@ -23,14 +23,14 @@
 namespace testsupport {
 
 	/**
-	 * @brief Reads a data file from the repository's resources/ folder.
+	 * @brief Reads a data file from repository's resources/ folder.
 	 *
-	 * The tests run from different directories (the solution's bin folder under
-	 * Visual Studio, the repository root or build/ folder under make), so this
-	 * searches the working directory and each parent for resources/<name>, or
-	 * for <name> next to the executable.
+	 * tests run from different directories (the solution's bin folder under
+	 * Visual Studio, repository root or build/ folder under make), so this
+	 * searches working directory and each parent for resources/<name>, or
+	 * for <name> next to executable.
 	 *
-	 * @return The file's bytes, or an empty string if it was not found.
+	 * @return file's bytes, or an empty string if it was not found.
 	 */
 	inline std::string readResource(const std::string& name) {
 		namespace fs = std::filesystem;
@@ -69,7 +69,7 @@ namespace testsupport {
 	/**
 	 * @brief Builds a [rows, cols] tensor of small, deterministic, non-trivial
 	 * values (a sine pattern), so tests do not need a random engine.
-	 * @param phase Shifts the pattern so different inputs can be produced.
+	 * @param phase Shifts pattern so different inputs can be produced.
 	 */
 	inline Tensor<double> patternMatrix(std::size_t rows, std::size_t cols,
 		double phase = 0.0) {
@@ -99,7 +99,7 @@ namespace testsupport {
 	}
 
 	/**
-	 * @brief True when both tensors have the same shape and identical values.
+	 * @brief True when both tensors have same shape and identical values.
 	 */
 	inline bool tensorsEqual(const Tensor<double>& left, const Tensor<double>& right) {
 		return left.shape == right.shape && left.data == right.data;
@@ -123,7 +123,7 @@ namespace testsupport {
 	 * respect to element `index` of `variable`, which is restored afterwards.
 	 *
 	 * @param variable Any tensor `lossFunction` reads (an input or a weight).
-	 * @param lossFunction Recomputes the scalar loss from the current values.
+	 * @param lossFunction Recomputes scalar loss from current values.
 	 */
 	inline double numericGradient(Tensor<double>& variable, std::size_t index,
 		const std::function<double()>& lossFunction, double step = 1e-6) {
@@ -142,8 +142,8 @@ namespace testsupport {
 	 * @brief Checks an analytic gradient against finite differences for every
 	 * element of `variable`.
 	 *
-	 * @param analytic Gradient computed by the code under test (same shape).
-	 * @param tolerance Allowed |analytic - numeric|, relative to the larger
+	 * @param analytic Gradient computed by code under test (same shape).
+	 * @param tolerance Allowed |analytic - numeric|, relative to larger
 	 * magnitude (floored at 1) so tiny gradients are compared absolutely.
 	 */
 	inline ::testing::AssertionResult gradientMatches(Tensor<double>& variable,

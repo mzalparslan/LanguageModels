@@ -3,8 +3,8 @@
 #include <string>
 #include <type_traits>
 
-// The catch-by-base behavior is part of the library's contract: callers may
-// catch the specific type, the family, or the std base.
+// catch-by-base behavior is part of library's contract: callers may
+// catch specific type, family, or std base.
 
 TEST(ExceptionsTest, HierarchyMatchesDocumentedDesign) {
     static_assert(std::is_base_of_v<std::domain_error, NonFiniteError>);

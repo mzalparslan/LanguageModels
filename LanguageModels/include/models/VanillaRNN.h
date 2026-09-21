@@ -86,7 +86,7 @@ private:
 	}
 
 	// Rejects a character id outside [0, vocabSize). Ids arrive as int, and a
-	// negative one would wrap to a huge index and read far outside the weights.
+	// negative one would wrap to a huge index and read far outside weights.
 	void requireCharId(int id, const char* what) const {
 		if (id < 0) {
 			throw InvalidParameterError(std::string(what) + " must not be negative!");
@@ -118,8 +118,8 @@ public:
 	 * @return per-step hidden states (index 0 is hPrev) and next-character
 	 * probabilities [steps x vocabSize].
 	 * @throws InvalidSizeError If inputs is empty or hPrev is not [hiddenSize] long.
-	 * @throws InvalidParameterError If a character id is outside the vocabulary.
-	 * @throws NaNError, NonFiniteError If the state or a probability normalizer is not finite.
+	 * @throws InvalidParameterError If a character id is outside vocabulary.
+	 * @throws NaNError, NonFiniteError If state or a probability normalizer is not finite.
 	 */
 	Cache forward(const std::vector<int> &inputs, const std::vector<T> &hPrev) {
 		validation::requireNonEmpty(inputs.size(), "Character sequence");
@@ -201,7 +201,7 @@ public:
 	 * @return Current loss (summed cross-entropy over sequence).
 	 * @throws InvalidParameterError If learningRate <= 0, or an id is out of range.
 	 * @throws InvalidSizeError If targets and inputs differ in length.
-	 * @throws NaNError, NonFiniteError If the loss or a gradient is not finite.
+	 * @throws NaNError, NonFiniteError If loss or a gradient is not finite.
 	 */
 	T trainStep(const std::vector<int>& inputs,
 		const std::vector<int>& targets,
@@ -343,7 +343,7 @@ public:
 	 * @param n Number of characters to generate after seed.
 	 * @return seed followed by n sampled character ids.
 	 * @throws InvalidSizeError If hSeed is not [hiddenSize] long.
-	 * @throws InvalidParameterError If seedIdx is outside the vocabulary.
+	 * @throws InvalidParameterError If seedIdx is outside vocabulary.
 	 */
 	std::vector<std::size_t> sample(const std::vector<T>& hSeed, std::size_t seedIdx, std::size_t n) {
 		validation::requireSameSize(hSeed.size(), hiddenSize, "Hidden state");
@@ -421,7 +421,7 @@ public:
 	 * @return Loss, perplexity, next-character accuracy and bits per character.
 	 * @throws InvalidSizeError If inputs is empty or targets differs in length.
 	 * @throws InvalidParameterError If an id is out of range.
-	 * @throws NonFiniteError If the loss is infinite (a target with probability 0).
+	 * @throws NonFiniteError If loss is infinite (a target with probability 0).
 	 */
 	Metrics evaluate(const std::vector<int>& inputs, const std::vector<int>& targets, const std::vector<T>& hPrev) {
 		validation::requireNonEmpty(inputs.size(), "Character sequence");

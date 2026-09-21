@@ -28,6 +28,15 @@
     <Filter Include="unit\tokenizers">
       <UniqueIdentifier>{a1b2c3d8-1a2b-4c3d-8e4f-5f6a7b8c9d08}</UniqueIdentifier>
     </Filter>
+    <Filter Include="unit\data">
+      <UniqueIdentifier>{a1b2c3d9-1a2b-4c3d-8e4f-5f6a7b8c9d09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\pipelines">
+      <UniqueIdentifier>{a1b2c3da-1a2b-4c3d-8e4f-5f6a7b8c9d0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\utilities">
+      <UniqueIdentifier>{a1b2c3db-1a2b-4c3d-8e4f-5f6a7b8c9d0b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -114,6 +123,39 @@
     </ClCompile>
     <ClCompile Include="unit\models\MiniTransformerThreadingTests.cpp">
       <Filter>unit\models</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\data\DataLoaderTests.cpp">
+      <Filter>unit\data</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\data\DataSplitterTests.cpp">
+      <Filter>unit\data</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\data\TextNormalizerTests.cpp">
+      <Filter>unit\data</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\utilities\LoggerTests.cpp">
+      <Filter>unit\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\tokenizers\WordTokenizerTests.cpp">
+      <Filter>unit\tokenizers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\tokenizers\CharTokenizerTests.cpp">
+      <Filter>unit\tokenizers</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\pipelines\PipelineTests.cpp">
+      <Filter>unit\pipelines</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\pipelines\MiniTransformerPipelineTests.cpp">
+      <Filter>unit\pipelines</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\pipelines\VanillaRnnPipelineTests.cpp">
+      <Filter>unit\pipelines</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\pipelines\GptPipelineTests.cpp">
+      <Filter>unit\pipelines</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\pipelines\BertPipelineTests.cpp">
+      <Filter>unit\pipelines</Filter>
     </ClCompile>
     <ClCompile Include="unit\models\MoELayerTests.cpp">
       <Filter>unit\models</Filter>

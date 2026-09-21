@@ -15,15 +15,15 @@
  * @brief Small fixed pool of worker threads with one operation, parallelFor(),
  * which splits a range of independent work into contiguous chunks.
  *
- * Built for the numeric loops of this library (zeroing, updating and
+ * Built for numeric loops of this library (zeroing, updating and
  * multiplying large tensors), where work per element is tiny: threads are
  * created once and reused, and a range too small to be worth splitting simply
- * runs on the calling thread.
+ * runs on calling thread.
  *
- * The calling thread takes the first chunk itself, so a pool of N workers
+ * calling thread takes first chunk itself, so a pool of N workers
  * gives N + 1 threads of work. Chunks are contiguous and independent, which
- * lets callers keep the per-element order of operations unchanged and get
- * bit-identical results whatever the thread count.
+ * lets callers keep per-element order of operations unchanged and get
+ * bit-identical results whatever thread count.
  *
  * @remark parallelFor() may be called from several threads at once, but must
  * not be called from inside a parallelFor() body: every worker could then be
@@ -33,7 +33,7 @@ class ThreadPool {
 public:
 	/**
 	 * @param workerCount Number of background threads (0 makes a pool that
-	 * runs everything on the caller).
+	 * runs everything on caller).
 	 */
 	explicit ThreadPool(std::size_t workerCount) {
 		for (std::size_t i = 0; i < workerCount; i++) {
@@ -57,14 +57,14 @@ public:
 
 	/**
 	 * @brief Most threads that can work on one parallelFor() call (the
-	 * workers plus the caller).
+	 * workers plus caller).
 	 */
 	std::size_t maxThreads() const { return workers.size() + 1; }
 
 	/**
-	 * @brief Process-wide pool used by the library's *Parallel methods.
-	 * Created on first use with at least 8 threads (or the hardware thread
-	 * count, if larger); asking for more threads than the machine has is
+	 * @brief Process-wide pool used by library's *Parallel methods.
+	 * Created on first use with at least 8 threads (or hardware thread
+	 * count, if larger); asking for more threads than machine has is
 	 * harmless, only slower.
 	 */
 	static ThreadPool& shared() {
@@ -73,7 +73,7 @@ public:
 	}
 
 	/**
-	 * @brief Number of threads to use when the caller has no preference: the
+	 * @brief Number of threads to use when caller has no preference: the
 	 * hardware thread count (at least 1).
 	 */
 	static std::size_t defaultThreadCount() {
@@ -81,14 +81,14 @@ public:
 	}
 
 	/**
-	 * @brief Runs body(begin, end) over the range [0, count), split into
-	 * contiguous chunks that run at the same time, and returns when every
+	 * @brief Runs body(begin, end) over range [0, count), split into
+	 * contiguous chunks that run at same time, and returns when every
 	 * chunk is done.
 	 *
 	 * @param count Number of independent items.
 	 * @param minPerChunk Fewest items worth giving to one thread; a range
 	 * shorter than 2 * minPerChunk is not split.
-	 * @param threads Most threads to use (1 runs everything on the caller).
+	 * @param threads Most threads to use (1 runs everything on caller).
 	 * @param body Called once per chunk with its half-open item range.
 	 * Chunks must not depend on each other.
 	 * @throws Whatever a chunk threw (the first one, if several did), after
@@ -107,13 +107,15 @@ public:
 			return;
 		}
 
-		// Shared with the queued tasks, which may still be finishing their
-		// bookkeeping when the caller returns.
+		// Shared with queued tasks, which may still be finishing their
+		// bookkeeping when caller returns.
 		auto state = std::make_shared<CallState>();
 		state->remaining = chunks - 1;
 
 		// Chunk c covers [count * c / chunks, count * (c + 1) / chunks).
-		auto chunkBegin = [count, chunks](std::size_t c) { return count / chunks * c + std::min(c, count % chunks); };
+		auto chunkBegin = [count, chunks](std::size_t c) { 
+			return count / chunks * c + std::min(c, count % chunks); 
+			};
 		for (std::size_t c = 1; c < chunks; c++) {
 			const std::size_t begin = chunkBegin(c);
 			const std::size_t end = chunkBegin(c + 1);

@@ -90,7 +90,7 @@ TEST(ThreadPoolTest, LargeRangesReallyUseMoreThanOneThread) {
         ids.insert(std::this_thread::get_id());
     });
 
-    // The caller takes the first chunk; the others go to workers.
+    // caller takes first chunk; others go to workers.
     EXPECT_GE(ids.size(), 2u);
     EXPECT_TRUE(ids.count(std::this_thread::get_id()));
 }

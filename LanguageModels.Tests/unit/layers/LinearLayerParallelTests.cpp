@@ -4,16 +4,16 @@
 #include <cmath>
 
 // LinearLayer's *Parallel methods must give bit-identical results to
-// forward()/backward()/update(), whatever the thread count, so everything is
+// forward()/backward()/update(), whatever thread count, so everything is
 // compared exactly (no tolerance).
 
 namespace {
-    // A wide output, like a vocabulary projection, so the work is split into chunks.
+    // A wide output, like a vocabulary projection, so work is split into chunks.
     const std::size_t rows = 6;
     const std::size_t inputSize = 32;
     const std::size_t outputSize = 3000;
 
-    // Deterministic values with some exact zeros, to exercise the zero-skipping.
+    // Deterministic values with some exact zeros, to exercise zero-skipping.
     Tensor<double> patterned(std::size_t r, std::size_t c, double phase) {
         Tensor<double> tensor({ r, c });
         for (std::size_t i = 0; i < tensor.size(); i++) {

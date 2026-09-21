@@ -154,9 +154,9 @@ private:
     Tensor<T> concatOut;
 
     /**
-     * @brief Validates the head configuration and returns the per-head width.
-     * It runs while the members are being built, before anything divides by
-     * the head count.
+     * @brief Validates head configuration and returns per-head width.
+     * It runs while members are being built, before anything divides by
+     * head count.
      */
     static std::size_t checkedHeadWidth(std::size_t dm, std::size_t nHeads) {
         validation::requirePositiveSize(dm, "MultiHeadAttention model width");

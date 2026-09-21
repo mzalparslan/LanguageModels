@@ -14,9 +14,9 @@
  * A neural model's perplexity means little on its own; it becomes meaningful
  * next to models whose score can be worked out independently:
  *
- *  - guessing uniformly over the vocabulary gives perplexity == vocabulary size;
- *  - a unigram model (letter frequencies) is the entropy of the text;
- *  - a bigram model (one character of context) is the conditional entropy.
+ *  - guessing uniformly over vocabulary gives perplexity == vocabulary size;
+ *  - a unigram model (letter frequencies) is entropy of text;
+ *  - a bigram model (one character of context) is conditional entropy.
  *
  * A trained network that does not beat these is not learning what it should.
  * Counts are stored sparsely, so a word-level vocabulary is fine.
@@ -26,9 +26,9 @@ public:
 	/**
 	 * @param vocabSize Number of token ids; ids are 0 .. vocabSize - 1.
 	 * @param order 1 for a unigram model (no context), 2 for a bigram model
-	 * (the previous token is the context).
+	 * (the previous token is context).
 	 * @param smoothing Add-k smoothing: k is added to every count, so unseen
-	 * tokens keep a small probability. Use 0 for the plain maximum-likelihood
+	 * tokens keep a small probability. Use 0 for plain maximum-likelihood
 	 * estimate (which gives infinite loss on a token never seen in training),
 	 * or a positive value, e.g. 1 (Laplace), to score held-out text.
 	 * @throws InvalidParameterSizeError If vocabSize is zero.
@@ -46,9 +46,9 @@ public:
 	}
 
 	/**
-	 * @brief Adds a token sequence to the counts. May be called repeatedly.
+	 * @brief Adds a token sequence to counts. May be called repeatedly.
 	 *
-	 * @throws InvalidParameterError If a token id is outside the vocabulary.
+	 * @throws InvalidParameterError If a token id is outside vocabulary.
 	 */
 	void train(const std::vector<std::size_t>& tokens) {
 		for (std::size_t token : tokens) {
@@ -65,10 +65,10 @@ public:
 	}
 
 	/**
-	 * @brief Probability of `next` given the previous token (ignored by a
+	 * @brief Probability of `next` given previous token (ignored by a
 	 * unigram model).
 	 *
-	 * @throws InvalidParameterError If an id is outside the vocabulary.
+	 * @throws InvalidParameterError If an id is outside vocabulary.
 	 * @throws DivisionByZeroError If nothing was trained and smoothing is 0.
 	 */
 	double probability(std::size_t previous, std::size_t next) const {
@@ -93,13 +93,13 @@ public:
 	}
 
 	/**
-	 * @brief Scores a sequence the way a next-token model is scored: each
-	 * token predicts the one after it, so a sequence of n tokens makes n - 1
-	 * predictions. The prediction is the most frequent token (lowest id on a tie).
+	 * @brief Scores a sequence way a next-token model is scored: each
+	 * token predicts one after it, so a sequence of n tokens makes n - 1
+	 * predictions. prediction is most frequent token (lowest id on a tie).
 	 *
 	 * @return Loss, perplexity, accuracy and bits per token.
 	 * @throws InvalidSizeError If fewer than two tokens are given.
-	 * @throws InvalidParameterError If a token id is outside the vocabulary.
+	 * @throws InvalidParameterError If a token id is outside vocabulary.
 	 * @throws NonFiniteError If a token has probability 0 (see smoothing).
 	 */
 	Metrics evaluate(const std::vector<std::size_t>& tokens) const {

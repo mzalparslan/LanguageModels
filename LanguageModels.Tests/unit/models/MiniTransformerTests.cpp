@@ -9,7 +9,7 @@ namespace {
     const std::size_t targetVocab = 10;
 
     // Toy translation pair: teacher-forced decoder input and expected output
-    // (the input shifted one position to the left).
+    // (the input shifted one position to left).
     const std::vector<std::size_t> source = { 3, 4, 5, 6 };
     const std::vector<std::size_t> decoderInput = { 1, 2, 3, 4, 5 };
     const std::vector<std::size_t> expectedOutput = { 2, 3, 4, 5, 0 };
@@ -67,7 +67,7 @@ TEST(MiniTransformerTest, EveryTargetPositionSeesTheWholeSourceSentence) {
     model.forward(source, decoderInput, before);
     model.forward(changed, decoderInput, after);
 
-    // Cross-attention: even the first target position depends on the last source token.
+    // Cross-attention: even first target position depends on last source token.
     bool firstRowChanged = false;
     for (std::size_t j = 0; j < targetVocab; j++) {
         firstRowChanged = firstRowChanged || std::fabs(before[j] - after[j]) > 1e-9;
@@ -163,7 +163,7 @@ TEST(MiniTransformerTest, TrainStepWorksWithPlainSgdToo) {
 
 // === decoding
 //
-// The toy pair above reads as: start token 1, then 2 3 4 5, then end token 0.
+// toy pair above reads as: start token 1, then 2 3 4 5, then end token 0.
 
 namespace {
     const std::size_t startToken = 1;
@@ -182,7 +182,7 @@ namespace {
 TEST(MiniTransformerDecodingTest, GreedyDecodingFollowsTheArgMaxOfForward) {
     MiniTransformer<double> model(sourceVocab, targetVocab);
 
-    // Reference: the same loop written out with forward().
+    // Reference: same loop written out with forward().
     std::vector<std::size_t> expected = { startToken };
     for (int step = 0; step < 6; step++) {
         Tensor<double> logits;
@@ -242,7 +242,7 @@ TEST(MiniTransformerDecodingTest, BeamSearchFindsTheLearnedTranslation) {
 
     EXPECT_EQ(hypothesis.tokens, learnedTranslation);
     EXPECT_TRUE(hypothesis.finished);
-    // A trained model is confident: the whole sentence is close to probability 1.
+    // A trained model is confident: whole sentence is close to probability 1.
     EXPECT_LE(hypothesis.logProbability, 0.0);
     EXPECT_GT(hypothesis.logProbability, -1.0);
 }
@@ -262,8 +262,8 @@ TEST(MiniTransformerDecodingTest, BeamScoreIsTheSumOfTheTokenLogProbabilities) {
 
     auto hypothesis = model.beamSearch(source, startToken, endToken, 4, 3);
 
-    // Score the returned tokens independently: the decoder reads every token but
-    // the last and must predict every token but the first.
+    // Score returned tokens independently: decoder reads every token but
+    // last and must predict every token but first.
     std::vector<std::size_t> input(hypothesis.tokens.begin(), hypothesis.tokens.end() - 1);
     std::vector<std::size_t> targets(hypothesis.tokens.begin() + 1, hypothesis.tokens.end());
     Tensor<double> logits;
@@ -278,7 +278,7 @@ TEST(MiniTransformerDecodingTest, RejectsInvalidArguments) {
 
     EXPECT_THROW(model.generate({}, startToken, endToken, 3), InvalidSizeError);
     EXPECT_THROW(model.beamSearch({}, startToken, endToken, 3, 2), InvalidSizeError);
-    // The decoder sees at most MiniTransformerConfig::maxSeqLen tokens.
+    // decoder sees at most MiniTransformerConfig::maxSeqLen tokens.
     EXPECT_THROW(model.generate(source, startToken, endToken, MiniTransformerConfig::maxSeqLen + 1), InvalidSizeError);
     EXPECT_THROW(model.beamSearch(source, startToken, endToken, MiniTransformerConfig::maxSeqLen + 1, 2), InvalidSizeError);
     EXPECT_THROW(model.beamSearch(source, startToken, endToken, 3, 0), InvalidParameterSizeError);

@@ -96,7 +96,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -116,7 +116,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,7 +135,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,7 +156,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\tokenizers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -179,6 +179,7 @@ copy /Y "$(SolutionDir)resources\*.txt" "$(ProjectDir)"</Command>
     <ClCompile Include="TestMiniTransformer.cpp" />
     <ClCompile Include="TestWordPieceTokenizer.cpp" />
     <ClCompile Include="TestTinyShakespeare.cpp" />
+    <ClCompile Include="TestPipelines.cpp" />
   </ItemGroup>
   <ItemGroup>
     <!-- Not wired into the build: standalone draft, kept for reference. -->

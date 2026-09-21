@@ -143,9 +143,9 @@ public:
 	 *
 	 * @throws InvalidParameterError If lr <= 0.
 	 * @throws NaNError, NonFiniteError If lr, a gradient, or an updated weight
-	 * is not finite: a bad value is reported before it is stored in the model.
-	 * @throws InvalidParameterSizeError If the gradient's size differs from the
-	 * weights' size, or the parameter was never initialized.
+	 * is not finite: a bad value is reported before it is stored in model.
+	 * @throws InvalidParameterSizeError If gradient's size differs from the
+	 * weights' size, or parameter was never initialized.
 	 */
 	void update(T lr, UpdateRule rule = UpdateRule::sgd()) {
 		validation::requirePositiveFinite(lr, "Learning rate");
@@ -169,7 +169,7 @@ public:
 	 * (embedding tables, output projections) that clearing them is a
 	 * noticeable part of a training step. Same result as zeroGrad().
 	 *
-	 * @param threads Most threads to use; 1 is the same as zeroGrad().
+	 * @param threads Most threads to use; 1 is same as zeroGrad().
 	 */
 	void zeroGradParallel(std::size_t threads) {
 		ThreadPool::shared().parallelFor(grad.size(), minElementsPerThread * 16, threads,
@@ -180,12 +180,12 @@ public:
 
 	/**
 	 * @brief update() spread over several threads. Every weight is updated
-	 * independently of the others, so the result is bit-identical to update()
-	 * whatever the thread count.
+	 * independently of others, so result is bit-identical to update()
+	 * whatever thread count.
 	 *
-	 * @param threads Most threads to use; 1 is the same as update().
-	 * @throws The same exceptions as update(). A bad value found by one thread
-	 * is reported after the other threads finish; weights updated before the
+	 * @param threads Most threads to use; 1 is same as update().
+	 * @throws same exceptions as update(). A bad value found by one thread
+	 * is reported after other threads finish; weights updated before the
 	 * error was found stay updated, as in update().
 	 */
 	void updateParallel(T lr, UpdateRule rule, std::size_t threads) {
@@ -215,7 +215,7 @@ public:
 
 private:
 	// Fewest weights worth giving to one thread when updating them: below this,
-	// waking a thread costs more than the update it would do.
+	// waking a thread costs more than update it would do.
 	static constexpr std::size_t minElementsPerThread = 4096;
 
 	/**
@@ -257,7 +257,7 @@ private:
 	}
 
 	/**
-	 * @brief Adam hyper-parameters and the per-timestep bias corrections.
+	 * @brief Adam hyper-parameters and per-timestep bias corrections.
 	 */
 	class AdamSettings {
 	public:
@@ -269,8 +269,8 @@ private:
 	};
 
 	/**
-	 * @brief Validates the Adam arguments, works out the bias corrections and
-	 * allocates the moment buffers on first use. Everything that must happen
+	 * @brief Validates Adam arguments, works out bias corrections and
+	 * allocates moment buffers on first use. Everything that must happen
 	 * once per update, before any weight changes.
 	 */
 	AdamSettings prepareAdam(std::size_t adamT, T beta1 = T(0.9), T beta2 = T(0.999), T epsilon = T(1e-8)) {
@@ -282,7 +282,7 @@ private:
 			throw InvalidParameterError("Adam beta1 and beta2 must be in [0, 1)!");
 		}
 
-		// Bias-correction denominators depend only on the timestep, so compute
+		// Bias-correction denominators depend only on timestep, so compute
 		// them once; a zero here would divide by zero for every weight.
 		auto biasCorrection1 = T(1) - std::pow(beta1, (double)adamT);
 		auto biasCorrection2 = T(1) - std::pow(beta2, (double)adamT);
@@ -299,7 +299,7 @@ private:
 	}
 
 	/**
-	 * @brief The Adam update of weights [begin, end). Each weight depends only
+	 * @brief Adam update of weights [begin, end). Each weight depends only
 	 * on itself, so ranges can run on different threads.
 	 */
 	void updateWAdamRange(T lr, const AdamSettings& settings, std::size_t begin, std::size_t end) {
@@ -344,7 +344,7 @@ private:
 	}
 
 	/**
-	 * @brief The plain update of weights [begin, end).
+	 * @brief plain update of weights [begin, end).
 	 */
 	void updateNoAdamRange(T lr, std::size_t begin, std::size_t end) {
 		for (std::size_t i = begin; i < end; i++) {

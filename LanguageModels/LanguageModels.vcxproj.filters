@@ -25,10 +25,67 @@
     <Filter Include="metrics">
       <UniqueIdentifier>{c3e1a7d2-5b48-4f0e-8a6d-91b2f7c04e35}</UniqueIdentifier>
     </Filter>
+    <Filter Include="data">
+      <UniqueIdentifier>{5d1c2e70-7a10-4f6b-9d0e-3b8f4a6c1d01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pipelines">
+      <UniqueIdentifier>{5d1c2e70-7a10-4f6b-9d0e-3b8f4a6c1d02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utilities">
+      <UniqueIdentifier>{5d1c2e70-7a10-4f6b-9d0e-3b8f4a6c1d03}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\metrics\Metrics.h">
       <Filter>metrics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\metrics\ScopedBenchmarkTimer.h">
+      <Filter>metrics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\tokenizers\WordTokenizer.h">
+      <Filter>tokenizers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\tokenizers\CharTokenizer.h">
+      <Filter>tokenizers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\data\Dataset.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\data\SentencePair.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\data\TextNormalizer.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\data\DataLoader.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\data\DataSplitter.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utilities\Logger.h">
+      <Filter>utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pipelines\ExecutionStrategy.h">
+      <Filter>pipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pipelines\Pipeline.h">
+      <Filter>pipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pipelines\CharacterCorpus.h">
+      <Filter>pipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pipelines\MiniTransformerPipeline.h">
+      <Filter>pipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pipelines\VanillaRnnPipeline.h">
+      <Filter>pipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pipelines\GptPipeline.h">
+      <Filter>pipelines</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pipelines\BertPipeline.h">
+      <Filter>pipelines</Filter>
     </ClInclude>
     <ClInclude Include="include\metrics\LogitMetrics.h">
       <Filter>metrics</Filter>

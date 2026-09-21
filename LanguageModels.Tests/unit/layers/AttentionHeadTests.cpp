@@ -87,7 +87,7 @@ TEST(AttentionHeadTest, CausalMaskZeroesFutureWeights) {
         }
         EXPECT_NEAR(sum, 1.0, 1e-12);
     }
-    // The first token can only attend to itself.
+    // first token can only attend to itself.
     EXPECT_NEAR(head.attnWeights[0], 1.0, 1e-12);
 }
 
@@ -101,7 +101,7 @@ TEST(AttentionHeadTest, CausalOutputIgnoresLaterTokens) {
     head.forward(x, x, x, before, noRope, true);
     head.forward(changed, changed, changed, after, noRope, true);
 
-    // Rows 0..3 must not see the modified last token; row 4 must.
+    // Rows 0..3 must not see modified last token; row 4 must.
     for (std::size_t i = 0; i < 4 * dHead; i++) {
         EXPECT_NEAR(before[i], after[i], 1e-12) << "index " << i;
     }
@@ -153,7 +153,7 @@ TEST(AttentionHeadTest, ForwardValidatesInputs) {
     EXPECT_THROW(head.forward(wrongWidth, good, good, out, noRope, false), InvalidSizeError);
     EXPECT_THROW(head.forward(good, wrongWidth, good, out, noRope, false), InvalidSizeError);
     EXPECT_THROW(head.forward(good, good, wrongWidth, out, noRope, false), InvalidSizeError);
-    // Keys and values must have the same number of rows.
+    // Keys and values must have same number of rows.
     EXPECT_THROW(head.forward(good, good, differentLength, out, noRope, false), InvalidSizeError);
     EXPECT_THROW(head.forward(Tensor<double>({ dModel }), good, good, out, noRope, false), InvalidSizeError);
 }
@@ -172,7 +172,7 @@ TEST(AttentionHeadTest, SameSeedGivesIdenticalOutput) {
 }
 
 TEST(AttentionHeadRopeTest, SingleTokenIsUnaffectedByRotation) {
-    // Position 0 is not rotated, so a 1-token sequence must match the RoPE-free result.
+    // Position 0 is not rotated, so a 1-token sequence must match RoPE-free result.
     RandomEngine rng(42);
     AttentionHead<double> head(dModel, dHead, rng);
     RotaryEmbedding<double, HeadRopeConfig> rope;
@@ -250,7 +250,7 @@ TEST(AttentionHeadBackwardTest, InputGradientsHaveInputShape) {
 }
 
 TEST(AttentionHeadBackwardTest, SelfAttentionInputGradientMatchesFiniteDifferences) {
-    // For self-attention the same tensor feeds Q, K and V, so the total input
+    // For self-attention same tensor feeds Q, K and V, so total input
     // gradient is dQ + dK + dV.
     RandomEngine rng(42);
     AttentionHead<double> head(dModel, dHead, rng);
@@ -383,7 +383,7 @@ TEST(AttentionHeadRopeBackwardTest, InputGradientMatchesFiniteDifferences) {
 }
 
 TEST(AttentionHeadRopeBackwardTest, CrossAttentionGradientsMatchFiniteDifferences) {
-    // Different query and key lengths exercise the two rotations separately.
+    // Different query and key lengths exercise two rotations separately.
     RandomEngine rng(42);
     AttentionHead<double> head(dModel, dHead, rng);
     RotaryEmbedding<double, HeadRopeConfig> rope;
@@ -405,7 +405,7 @@ TEST(AttentionHeadRopeBackwardTest, CrossAttentionGradientsMatchFiniteDifference
 }
 
 TEST(AttentionHeadRopeBackwardTest, ForwardWithoutRopeAfterForwardWithRopeUsesPlainGradients) {
-    // The "was RoPE used" state belongs to the most recent forward().
+    // "was RoPE used" state belongs to most recent forward().
     RandomEngine rng(42);
     AttentionHead<double> head(dModel, dHead, rng);
     RotaryEmbedding<double, HeadRopeConfig> rope;

@@ -62,7 +62,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -79,7 +79,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -99,7 +99,7 @@
       <PreprocessorDefinitions>X64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -116,7 +116,7 @@
       <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)LanguageModels\include;$(SolutionDir)LanguageModels\include\common;$(SolutionDir)LanguageModels\include\config;$(SolutionDir)LanguageModels\include\embeddings;$(SolutionDir)LanguageModels\include\layers;$(SolutionDir)LanguageModels\include\metrics;$(SolutionDir)LanguageModels\include\data;$(SolutionDir)LanguageModels\include\pipelines;$(SolutionDir)LanguageModels\include\utilities;$(SolutionDir)LanguageModels\include\models;$(SolutionDir)LanguageModels\include\normalizations;$(SolutionDir)LanguageModels\include\tokenizers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -165,6 +165,17 @@
     <ClCompile Include="unit\models\DecoderOnlyModelTests.cpp" />
     <ClCompile Include="unit\models\MiniTransformerTests.cpp" />
     <ClCompile Include="unit\models\MiniTransformerThreadingTests.cpp" />
+    <ClCompile Include="unit\data\DataLoaderTests.cpp" />
+    <ClCompile Include="unit\data\DataSplitterTests.cpp" />
+    <ClCompile Include="unit\data\TextNormalizerTests.cpp" />
+    <ClCompile Include="unit\utilities\LoggerTests.cpp" />
+    <ClCompile Include="unit\tokenizers\WordTokenizerTests.cpp" />
+    <ClCompile Include="unit\tokenizers\CharTokenizerTests.cpp" />
+    <ClCompile Include="unit\pipelines\PipelineTests.cpp" />
+    <ClCompile Include="unit\pipelines\MiniTransformerPipelineTests.cpp" />
+    <ClCompile Include="unit\pipelines\VanillaRnnPipelineTests.cpp" />
+    <ClCompile Include="unit\pipelines\GptPipelineTests.cpp" />
+    <ClCompile Include="unit\pipelines\BertPipelineTests.cpp" />
     <ClCompile Include="unit\models\MoELayerTests.cpp" />
     <ClCompile Include="unit\models\VanillaRNNTests.cpp" />
     <ClCompile Include="unit\normalizations\RMSNormTests.cpp" />

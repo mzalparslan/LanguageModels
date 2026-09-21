@@ -129,7 +129,7 @@ Example generateExample(std::mt19937& randomEngine) {
     mlmLabels.push_back(0);
 
     // MASKING (as in BERT's masked-language-model objective): hide one random
-    // ordinary token so the model must recover it from both sides' context.
+    // ordinary token so model must recover it from both sides' context.
     // Pick 1 random token to mask (excluding specials)
     std::vector<std::size_t> candidateIndices;
     for (std::size_t i = 0; i < inputIds.size(); i++) {
@@ -176,7 +176,7 @@ int testBert() {
     std::cout << "Initializing BERT..." << std::endl;
     BertModel<double> bert(vocabSize, dModel, numLayers, maxLen);
 
-    // Fixed seed: the training examples are the same on every run.
+    // Fixed seed: training examples are same on every run.
     std::mt19937 randomEngine(42);
 
     std::cout << "Starting Training Loop..." << std::endl;
@@ -186,7 +186,7 @@ int testBert() {
         double epochLoss = 0;
         int stepsPerEpoch = 20;
 
-        // Each step trains on one freshly generated example. The Adam timestep
+        // Each step trains on one freshly generated example. Adam timestep
         // must be 1-based and keep increasing across epochs.
         for (int stepIndex = 0; stepIndex < stepsPerEpoch; stepIndex++) {
             Example example = generateExample(randomEngine);
@@ -215,8 +215,8 @@ int testBert() {
     Tensor<double> logits;
     bert.predictMaskedLogits(inputIds, typeIds, logits);
 
-    // Find the model's prediction at the [MASK] position (index 3 in the test
-    // sentence): score every vocabulary word there and take the highest.
+    // Find model's prediction at [MASK] position (index 3 in test
+    // sentence): score every vocabulary word there and take highest.
     std::size_t maskPos = 3; // "the cat [MASK]" -> 0 1 2 3
 
     double bestScore = -1e9;

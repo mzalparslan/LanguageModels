@@ -10,9 +10,9 @@
 #include "Tensor.h"
 
 /**
- * @brief Argument and numerical checks shared by the whole library. Each
- * function throws the exception type that names the problem (see
- * Exceptions.h) and includes `what` in its message so the failing argument
+ * @brief Argument and numerical checks shared by whole library. Each
+ * function throws exception type that names problem (see
+ * Exceptions.h) and includes `what` in its message so failing argument
  * is identifiable.
  */
 namespace validation {
@@ -103,7 +103,7 @@ namespace validation {
 	 * @brief Requires a valid tensor shape: at least one dimension, none of
 	 * them zero.
 	 *
-	 * @throws InvalidParameterSizeError If the shape is empty or has a zero dimension.
+	 * @throws InvalidParameterSizeError If shape is empty or has a zero dimension.
 	 */
 	inline void requireValidShape(const std::vector<std::size_t>& shape, const char* what) {
 		if (shape.empty()) {
@@ -131,7 +131,7 @@ namespace validation {
 
 	/**
 	 * @brief Requires an id or index to be below a limit (a token id below
-	 * the vocabulary size, a class label below the class count, ...).
+	 * vocabulary size, a class label below class count, ...).
 	 *
 	 * @throws InvalidParameterError If index >= limit.
 	 */
@@ -166,6 +166,18 @@ namespace validation {
 	}
 
 	/**
+	 * @brief Requires a length to reach a minimum.
+	 *
+	 * @throws InvalidSizeError If size < minSize.
+	 */
+	inline void requireAtLeast(std::size_t size, std::size_t minSize, const char* what) {
+		if (size < minSize) {
+			throw InvalidSizeError(std::string(what) + " is " + std::to_string(size)
+				+ " but at least " + std::to_string(minSize) + " is needed!");
+		}
+	}
+
+	/**
 	 * @brief Requires two lengths to be equal.
 	 *
 	 * @throws InvalidSizeError If actual != expected.
@@ -180,7 +192,7 @@ namespace validation {
 	/**
 	 * @brief Requires a 2-D tensor (matrix) with at least one row and column.
 	 *
-	 * @throws InvalidSizeError If the tensor is not 2-D or is empty.
+	 * @throws InvalidSizeError If tensor is not 2-D or is empty.
 	 */
 	template <typename T>
 	void requireMatrix(const Tensor<T>& tensor, const char* what) {
@@ -195,7 +207,7 @@ namespace validation {
 	/**
 	 * @brief Requires a matrix with an exact number of columns.
 	 *
-	 * @throws InvalidSizeError See requireMatrix(), or if the width differs.
+	 * @throws InvalidSizeError See requireMatrix(), or if width differs.
 	 */
 	template <typename T>
 	void requireColumns(const Tensor<T>& tensor, std::size_t columns, const char* what) {
@@ -206,7 +218,7 @@ namespace validation {
 	/**
 	 * @brief Requires a matrix with an exact number of rows and columns.
 	 *
-	 * @throws InvalidSizeError See requireColumns(), or if the row count differs.
+	 * @throws InvalidSizeError See requireColumns(), or if row count differs.
 	 */
 	template <typename T>
 	void requireShape(const Tensor<T>& tensor, std::size_t rows, std::size_t columns,

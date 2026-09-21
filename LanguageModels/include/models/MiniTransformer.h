@@ -107,11 +107,11 @@ public:
 
 private:
     /**
-     * @brief The work of forward(), with the final projection to the target
+     * @brief work of forward(), with final projection to target
      * vocabulary (the largest matrix multiply of a step) split between
-     * threads. The result does not depend on the thread count.
+     * threads. result does not depend on thread count.
      *
-     * @param threads Most threads to use; 1 runs everything on the caller.
+     * @param threads Most threads to use; 1 runs everything on caller.
      */
     void forwardImpl(const std::vector<std::size_t>& src, const std::vector<std::size_t>& tgt,
         Tensor<T>& logits, std::size_t threads) {
@@ -230,7 +230,7 @@ public:
      * @return Summed cross-entropy loss over target positions.
      * @throws InvalidParameterError If lr <= 0, or a label id is out of range.
      * @throws InvalidSizeError If label and tgt differ in length.
-     * @throws NaNError, NonFiniteError If the loss is not finite.
+     * @throws NaNError, NonFiniteError If loss is not finite.
      */
     T trainStep(const std::vector<std::size_t>& src,
         const std::vector<std::size_t>& tgt,
@@ -413,30 +413,30 @@ public:
     }
 
     /**
-     * @brief trainStep() with the vocabulary-sized work spread over several
-     * threads; the same training step, only faster.
+     * @brief trainStep() with vocabulary-sized work spread over several
+     * threads; same training step, only faster.
      *
      * Almost all of a step's time goes into work that grows with the
-     * vocabulary, not with the model: the output projection (forward and
-     * backward), the softmax over every position, and clearing and updating
-     * the two embedding tables and the projection weights. Those parts run on
-     * several threads. The small encoder and decoder layers (width 32, a few
-     * tokens) stay on the calling thread, since handing them to another thread
-     * would cost more than the work.
+     * vocabulary, not with model: output projection (forward and
+     * backward), softmax over every position, and clearing and updating
+     * two embedding tables and projection weights. Those parts run on
+     * several threads. small encoder and decoder layers (width 32, a few
+     * tokens) stay on calling thread, since handing them to another thread
+     * would cost more than work.
      *
-     * Every element is still computed with the same operations in the same
-     * order as trainStep(), so the loss and the updated weights are
-     * bit-identical to trainStep()'s, whatever the thread count.
+     * Every element is still computed with same operations in same
+     * order as trainStep(), so loss and updated weights are
+     * bit-identical to trainStep()'s, whatever thread count.
      *
      * @param src Source token ids.
      * @param tgt Decoder input ids.
      * @param label Expected next-token ids, one per decoder position.
      * @param lr Learning rate.
      * @param rule Optimizer to apply (e.g. UpdateRule::adam(step)).
-     * @param threadCount Most threads to use; 0 uses the hardware thread count.
-     * The shared ThreadPool caps it at its size.
+     * @param threadCount Most threads to use; 0 uses hardware thread count.
+     * shared ThreadPool caps it at its size.
      * @return Summed cross-entropy loss over target positions.
-     * @throws The same exceptions as trainStep().
+     * @throws same exceptions as trainStep().
      */
     T trainStepMultipleThread(const std::vector<std::size_t>& src,
         const std::vector<std::size_t>& tgt,
@@ -450,8 +450,8 @@ public:
         const std::size_t threads = std::min(
             threadCount == 0 ? ThreadPool::defaultThreadCount() : threadCount, pool.maxThreads());
 
-        // Zero Gradients: backward passes accumulate, so start clean. The two
-        // embedding tables and the projection are the big ones.
+        // Zero Gradients: backward passes accumulate, so start clean. two
+        // embedding tables and projection are big ones.
         encEmb.zeroGradParallel(threads);
         decEmb.zeroGradParallel(threads);
         encAttn.zeroGrad();
@@ -512,7 +512,7 @@ public:
                 }
             });
 
-        // Summed in position order, as trainStep() does, so the total is identical.
+        // Summed in position order, as trainStep() does, so total is identical.
         T loss = T(0);
         for (std::size_t i = 0; i < seq; i++) {
             loss -= logProbOfLabel[i];
@@ -617,7 +617,7 @@ public:
 
         encEmb.backward(src, dSrcEmb);
 
-        // Update All: every layer applies its accumulated gradients. The big
+        // Update All: every layer applies its accumulated gradients. big
         // tables are updated by several threads.
         encEmb.updateParallel(lr, rule, threads);
         decEmb.updateParallel(lr, rule, threads);
@@ -638,36 +638,36 @@ public:
 
     /**
      * @brief One translation, finished or still being extended: its token ids
-     * and how likely the model thinks it is.
+     * and how likely model thinks it is.
      */
     class Hypothesis {
     public:
-        // Token ids: begins with the start token, and ends with the end token
+        // Token ids: begins with start token, and ends with end token
         // if one was produced.
         std::vector<std::size_t> tokens;
-        // Sum of ln p(token | earlier tokens) over every token after the start token.
+        // Sum of ln p(token | earlier tokens) over every token after start token.
         T logProbability = T(0);
-        // True once the end token was produced.
+        // True once end token was produced.
         bool finished = false;
     };
 
     /**
-     * @brief Greedy decoding: starts from the start token and repeatedly
-     * appends the single most likely next token, until the end token or
+     * @brief Greedy decoding: starts from start token and repeatedly
+     * appends single most likely next token, until end token or
      * maxNewTokens tokens.
      *
-     * Works on token ids only; mapping words to ids (and finding the ids of the
-     * start and end tokens) is the caller's tokenizer's job.
+     * Works on token ids only; mapping words to ids (and finding ids of the
+     * start and end tokens) is caller's tokenizer's job.
      *
      * @param src Source token ids.
      * @param startId Target token that begins a sentence (e.g. <SOS>).
      * @param endId Target token that ends a sentence (e.g. <EOS>).
-     * @param maxNewTokens Most tokens to generate after the start token.
-     * @return The start token followed by the generated tokens, ending with
-     * endId if the model produced it.
+     * @param maxNewTokens Most tokens to generate after start token.
+     * @return start token followed by generated tokens, ending with
+     * endId if model produced it.
      * @throws InvalidSizeError If src is empty, or maxNewTokens exceeds
      * MiniTransformerConfig::maxSeqLen.
-     * @throws InvalidParameterError If startId or endId is outside the target vocabulary.
+     * @throws InvalidParameterError If startId or endId is outside target vocabulary.
      */
     std::vector<std::size_t> generate(const std::vector<std::size_t>& src, std::size_t startId,
         std::size_t endId, std::size_t maxNewTokens) {
@@ -681,7 +681,7 @@ public:
             const std::size_t vocab = logits.shape[1];
             validation::requireBelow(endId, vocab, "End token id");
 
-            // Arg-max over the last position: its scores rank every possible next token.
+            // Arg-max over last position: its scores rank every possible next token.
             const T* lastRow = &logits.data[(logits.shape[0] - 1) * vocab];
             std::size_t best = 0;
             for (std::size_t tokenId = 1; tokenId < vocab; tokenId++) {
@@ -699,28 +699,28 @@ public:
     }
 
     /**
-     * @brief Beam search: instead of committing to the single best token at
-     * each step, keeps the beamWidth best partial translations (ranked by
+     * @brief Beam search: instead of committing to single best token at
+     * each step, keeps beamWidth best partial translations (ranked by
      * summed log probability) and extends all of them, which can find better
      * whole sentences than greedy decoding. A width of 1 is greedy decoding.
      *
      * @param src Source token ids.
      * @param startId Target token that begins a sentence (e.g. <SOS>).
      * @param endId Target token that ends a sentence (e.g. <EOS>).
-     * @param maxNewTokens Most tokens to generate after the start token.
+     * @param maxNewTokens Most tokens to generate after start token.
      * @param beamWidth Number of hypotheses kept alive at every step.
-     * @return The highest-scoring hypothesis found.
+     * @return highest-scoring hypothesis found.
      * @throws InvalidSizeError If src is empty, or maxNewTokens exceeds
      * MiniTransformerConfig::maxSeqLen.
      * @throws InvalidParameterSizeError If beamWidth is zero.
-     * @throws InvalidParameterError If startId or endId is outside the target vocabulary.
+     * @throws InvalidParameterError If startId or endId is outside target vocabulary.
      */
     Hypothesis beamSearch(const std::vector<std::size_t>& src, std::size_t startId,
         std::size_t endId, std::size_t maxNewTokens, std::size_t beamWidth) {
         requireDecodableLength(src, maxNewTokens);
         validation::requirePositiveSize(beamWidth, "Beam width");
 
-        // Init beam: a single hypothesis containing only the start token.
+        // Init beam: a single hypothesis containing only start token.
         std::vector<Hypothesis> beams(1);
         beams[0].tokens = { startId };
 
@@ -759,7 +759,7 @@ public:
                 }
 
                 // Expand: extend this hypothesis with every possible next token.
-                // (The pruning below keeps only the beamWidth best overall.)
+                // (The pruning below keeps only beamWidth best overall.)
                 for (std::size_t tokenId = 0; tokenId < vocab; tokenId++) {
                     Hypothesis extended = beam;
                     extended.tokens.push_back(tokenId);
@@ -771,7 +771,7 @@ public:
                 }
             }
 
-            // Prune: keep only the beamWidth highest-scoring hypotheses.
+            // Prune: keep only beamWidth highest-scoring hypotheses.
             std::sort(nextBeams.begin(), nextBeams.end(),
                 [](const Hypothesis& left, const Hypothesis& right) {
                     return left.logProbability > right.logProbability; // Descending
@@ -781,7 +781,7 @@ public:
             }
             beams = nextBeams;
 
-            // Stop early once every kept hypothesis has produced the end token.
+            // Stop early once every kept hypothesis has produced end token.
             bool allFinished = true;
             for (const Hypothesis& beam : beams) {
                 if (!beam.finished) {
@@ -802,7 +802,7 @@ private:
      */
     void requireDecodableLength(const std::vector<std::size_t>& src, std::size_t maxNewTokens) const {
         validation::requireNonEmpty(src.size(), "Source token sequence");
-        // The last decoder pass sees the start token plus all but the final new token.
+        // last decoder pass sees start token plus all but final new token.
         validation::requireAtMost(maxNewTokens, MiniTransformerConfig::maxSeqLen,
             "Number of generated tokens");
     }

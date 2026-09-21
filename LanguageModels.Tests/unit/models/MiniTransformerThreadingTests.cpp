@@ -4,9 +4,9 @@
 #include <cmath>
 #include <limits>
 
-// trainStepMultipleThread() must be the same training step as trainStep(),
-// only faster: same loss and same weights, bit for bit, whatever the thread
-// count. Vocabularies are large enough that the threaded parts (projection,
+// trainStepMultipleThread() must be same training step as trainStep(),
+// only faster: same loss and same weights, bit for bit, whatever thread
+// count. Vocabularies are large enough that threaded parts (projection,
 // softmax, embedding tables) are really split into several chunks.
 
 namespace {
@@ -17,7 +17,7 @@ namespace {
     const std::vector<std::size_t> decoderInput = { 1, 2, 3, 4, 5, 6, 7 };
     const std::vector<std::size_t> expectedOutput = { 2, 3, 4, 5, 6, 7, 0 };
 
-    // Two identical models: one trained with trainStep(), the other with
+    // Two identical models: one trained with trainStep(), other with
     // trainStepMultipleThread(), then compared exactly.
     void expectSameTraining(std::size_t threads, bool adam) {
         MiniTransformer<double> sequential(sourceVocab, targetVocab);
@@ -121,8 +121,8 @@ TEST(MiniTransformerThreadingTest, ValidatesItsArgumentsLikeTrainStep) {
 
 TEST(MiniTransformerThreadingTest, AnErrorFoundInsideTheThreadsReachesTheCaller) {
     MiniTransformer<double> model(sourceVocab, targetVocab);
-    // A bad label is found while the threads are computing the softmax: the
-    // error must reach the caller, and the pool must still work afterwards.
+    // A bad label is found while threads are computing softmax: the
+    // error must reach caller, and pool must still work afterwards.
     EXPECT_THROW(model.trainStepMultipleThread(source, decoderInput, { 2, 3, 4, 5, 6, 7, targetVocab + 5 }, 0.001,
         UpdateRule::adam(1), 4), InvalidParameterError);
 

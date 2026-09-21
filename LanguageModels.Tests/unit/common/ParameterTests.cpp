@@ -8,7 +8,7 @@ namespace {
     const double kNaN = std::numeric_limits<double>::quiet_NaN();
     const double kInf = std::numeric_limits<double>::infinity();
 
-    // A 1-D parameter with the given weights and gradients.
+    // A 1-D parameter with given weights and gradients.
     Parameter<double> makeParameter(const std::vector<double>& weights,
         const std::vector<double>& gradients) {
         Parameter<double> parameter;
@@ -76,7 +76,7 @@ TEST(ParameterTest, InitScaleScalesTheDistribution) {
     small.init({ 200 }, 0.01, rngA);
     large.init({ 200 }, 1.0, rngB);
 
-    // Same seed, so the draws are identical up to the scale factor.
+    // Same seed, so draws are identical up to scale factor.
     for (std::size_t i = 0; i < 200; i++) {
         EXPECT_NEAR(small.value[i] * 100.0, large.value[i], 1e-9);
     }
@@ -231,8 +231,8 @@ TEST(ParameterSgdTest, ZeroGradientLeavesWeightsUnchanged) {
 // === Adam ===
 
 TEST(ParameterAdamTest, FirstStepMovesAgainstTheGradientByAboutLearningRate) {
-    // At t = 1 the bias-corrected moments are m_hat = g and v_hat = g^2, so
-    // the step is lr * g / (|g| + eps), i.e. ~lr regardless of gradient size.
+    // At t = 1 bias-corrected moments are m_hat = g and v_hat = g^2, so
+    // step is lr * g / (|g| + eps), i.e. ~lr regardless of gradient size.
     Parameter<double> parameter = makeParameter({ 1.0, 1.0 }, { 0.2, -0.9 });
 
     parameter.update(0.01, UpdateRule::adam(1));

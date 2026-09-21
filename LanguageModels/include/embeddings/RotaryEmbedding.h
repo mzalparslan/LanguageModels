@@ -43,10 +43,10 @@ public:
     }
 
     /**
-     * @brief Undo apply(): rotates x in-place by the opposite angles.
+     * @brief Undo apply(): rotates x in-place by opposite angles.
      *
      * A rotation is orthogonal, so its inverse is its transpose. This is what
-     * backpropagation needs: if y = apply(x), then the gradient with respect
+     * backpropagation needs: if y = apply(x), then gradient with respect
      * to x is applyInverse(gradient with respect to y).
      *
      * @param x Tensor to be rotated back [seq, dHead]; same requirements as apply().
@@ -57,7 +57,7 @@ public:
     }
 
 private:
-	// Positions are encoded by rotating pairs of dimensions, so the head
+	// Positions are encoded by rotating pairs of dimensions, so head
 	// width must be positive and even; a zero max length has no positions.
 	static_assert(RopeConfig::d_head > 0 && RopeConfig::d_head % 2 == 0,
 		"RotaryEmbedding needs a positive, even d_head!");

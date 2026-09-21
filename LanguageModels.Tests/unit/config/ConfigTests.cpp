@@ -5,8 +5,8 @@
 #include "MiniTransformerConfig.h"
 #include <cstddef>
 
-// The configs feed compile-time table sizes (RoPE), so the relationships they
-// promise are checked here as well as by static_asserts in the headers.
+// configs feed compile-time table sizes (RoPE), so relationships they
+// promise are checked here as well as by static_asserts in headers.
 
 TEST(ModelConfigTest, HeadDimensionIsModelWidthDividedByHeads) {
     EXPECT_EQ(ModelConfig::d_head, ModelConfig::d_model / ModelConfig::h);

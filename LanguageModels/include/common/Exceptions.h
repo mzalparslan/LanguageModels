@@ -6,7 +6,7 @@
  * @brief A computed value is not finite (Inf), e.g. a loss that overflowed or
  * a probability of exactly zero that reached log().
  *
- * NaNError is the more specific case. Both derive from std::domain_error.
+ * NaNError is more specific case. Both derive from std::domain_error.
  */
 class NonFiniteError : public std::domain_error {
 public:
@@ -15,7 +15,7 @@ public:
 
 /**
  * @brief A computed value is NaN (not a number). NaN spreads through every
- * later calculation it touches, so it is reported the moment it is seen.
+ * later calculation it touches, so it is reported moment it is seen.
  */
 class NaNError : public NonFiniteError {
 public:
@@ -33,7 +33,7 @@ public:
 
 /**
  * @brief An argument's value is outside its valid range: a non-positive
- * learning rate, a token id at or beyond the vocabulary size, a class label
+ * learning rate, a token id at or beyond vocabulary size, a class label
  * out of range, and so on.
  */
 class InvalidParameterError : public std::invalid_argument {
@@ -42,9 +42,9 @@ public:
 };
 
 /**
- * @brief Data has the wrong size or shape for the operation: a matrix whose
- * width does not match a layer, two vectors that must be the same length, an
- * empty input, or a sequence longer than the model supports.
+ * @brief Data has wrong size or shape for operation: a matrix whose
+ * width does not match a layer, two vectors that must be same length, an
+ * empty input, or a sequence longer than model supports.
  */
 class InvalidSizeError : public std::invalid_argument {
 public:
@@ -53,11 +53,30 @@ public:
 
 /**
  * @brief A model configuration size is zero or inconsistent: a zero width,
- * vocabulary or layer count, a model width not divisible by the number of
+ * vocabulary or layer count, a model width not divisible by number of
  * heads, more experts requested per token than exist, or a gradient whose
  * size differs from its weights.
  */
 class InvalidParameterSizeError : public InvalidSizeError {
 public:
 	using InvalidSizeError::InvalidSizeError;
+};
+
+/**
+ * @brief A data file could not be opened or read, or holds no usable data.
+ * Derives from std::runtime_error: unlike argument errors above, the
+ * arguments were fine and outside world (the file) was not.
+ */
+class DataLoadError : public std::runtime_error {
+public:
+	using std::runtime_error::runtime_error;
+};
+
+/**
+ * @brief A pipeline was asked to do something out of order, such as evaluating
+ * a model that has not been trained yet.
+ */
+class PipelineStateError : public std::logic_error {
+public:
+	using std::logic_error::logic_error;
 };

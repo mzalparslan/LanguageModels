@@ -152,13 +152,13 @@ public:
 	// ------------------------------------------------------------------
 	// Multi-threaded variants, for layers with a large output (a
 	// vocabulary-sized output projection). They give bit-identical results
-	// to the methods above, because every output element is still computed
-	// with the same operations in the same order; only which thread computes
-	// it changes. `threads` is the most threads to use (1 = the caller only).
+	// to methods above, because every output element is still computed
+	// with same operations in same order; only which thread computes
+	// it changes. `threads` is most threads to use (1 = caller only).
 	// ------------------------------------------------------------------
 
 	/**
-	 * @brief zeroGrad() with the large weight gradient cleared by several threads.
+	 * @brief zeroGrad() with large weight gradient cleared by several threads.
 	 */
 	void zeroGradParallel(std::size_t threads) {
 		W.zeroGradParallel(threads);
@@ -166,7 +166,7 @@ public:
 	}
 
 	/**
-	 * @brief forward() with the output columns split between threads.
+	 * @brief forward() with output columns split between threads.
 	 *
 	 * @see forward
 	 */
@@ -178,7 +178,7 @@ public:
 		const std::size_t K = dIn;
 		const std::size_t N = dOut;
 
-		// Like MatMul2D: reuse out when it already has the right shape.
+		// Like MatMul2D: reuse out when it already has right shape.
 		if (out.shape.size() == 2 && out.shape[0] == M && out.shape[1] == N) {
 			std::fill(out.data.begin(), out.data.end(), T(0));
 		}
@@ -188,7 +188,7 @@ public:
 
 		// One thread owns a range of output columns for every row, so each out[i][j]
 		// is built as in MatMul2D: products added in ascending k (zero inputs skipped),
-		// then the bias.
+		// then bias.
 		ThreadPool::shared().parallelFor(N, minMultiplyAddsPerThread / std::max<std::size_t>(M * K, 1),
 			threads, [&](std::size_t jBegin, std::size_t jEnd) {
 				for (std::size_t i = 0; i < M; i++) {
@@ -211,7 +211,7 @@ public:
 	}
 
 	/**
-	 * @brief backward() split between threads, without the temporary
+	 * @brief backward() split between threads, without temporary
 	 * transposed copies and gradient matrix that backward() builds.
 	 *
 	 * @see backward
@@ -231,7 +231,7 @@ public:
 		//   dB[v] += sum over rows i of out[i][v]                  (rows in order)
 		//   dW[k][v] += sum over rows i of x[i][k] * out[i][v]     (rows in order,
 		//                                                           zero inputs skipped)
-		// The sum over rows is finished before it is added to the stored gradient,
+		// sum over rows is finished before it is added to stored gradient,
 		// as backward() does with its temporary dW.
 		pool.parallelFor(N, minMultiplyAddsPerThread / std::max<std::size_t>(M * K, 1),
 			threads, [&](std::size_t vBegin, std::size_t vEnd) {
@@ -262,7 +262,7 @@ public:
 			});
 
 		// dx[i][j] = sum over v of out[i][v] * W[j][v] (v in order, zero gradients
-		// skipped). Reading W's rows directly avoids transposing the whole matrix.
+		// skipped). Reading W's rows directly avoids transposing whole matrix.
 		if (dx.shape.size() != 2 || dx.shape[0] != M || dx.shape[1] != K) {
 			dx = Tensor<T>({ M, K }, T(0));
 		}
@@ -285,7 +285,7 @@ public:
 	}
 
 	/**
-	 * @brief update() with the weights updated by several threads.
+	 * @brief update() with weights updated by several threads.
 	 */
 	void updateParallel(T lr, UpdateRule rule, std::size_t threads) {
 		W.updateParallel(lr, rule, threads);
@@ -294,7 +294,7 @@ public:
 
 private:
 	// Multiply-adds worth giving to one thread: below this, waking a thread
-	// costs more than the work it would do.
+	// costs more than work it would do.
 	static constexpr std::size_t minMultiplyAddsPerThread = 20000;
 
 	/**

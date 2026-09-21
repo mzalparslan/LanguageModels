@@ -22,7 +22,7 @@ TEST(SinusoidalEmbeddingTest, PositionOneUsesGeometricallySpacedFrequencies) {
     const std::size_t dim = 4;
     SinusoidalEmbedding<double> embedding(10, dim);
 
-    // Pair i has frequency 10000^(-i / dim): 1 for the first pair, 0.01 for the second.
+    // Pair i has frequency 10000^(-i / dim): 1 for first pair, 0.01 for second.
     EXPECT_NEAR(embedding.pe[1 * dim + 0], std::sin(1.0), 1e-12);
     EXPECT_NEAR(embedding.pe[1 * dim + 1], std::cos(1.0), 1e-12);
     EXPECT_NEAR(embedding.pe[1 * dim + 2], std::sin(0.01), 1e-12);
@@ -56,7 +56,7 @@ TEST(SinusoidalEmbeddingTest, OddWidthLeavesTheLastCosineSlotOut) {
     SinusoidalEmbedding<double> embedding(4, 3);
 
     EXPECT_EQ(embedding.pe.shape, (std::vector<std::size_t>{ 4, 3 }));
-    // Position 1, last column: sine of the third-pair frequency.
+    // Position 1, last column: sine of third-pair frequency.
     EXPECT_NEAR(embedding.pe[1 * 3 + 2], std::sin(std::exp(2 * -std::log(10000.0) / 3)), 1e-12);
 }
 
