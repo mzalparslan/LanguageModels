@@ -24,9 +24,9 @@ interface.
 The Metal code itself is built and tested by the macOS job of the CI workflow. On its first
 run the job compiled the Objective-C++ and the kernels without changes, the runner reported a
 Metal device ("Apple Paravirtual device", unified memory), and the Metal tests passed against
-the CPU reference. That is a virtual GPU, so it shows the code is correct, not that it is
-fast: no timings exist yet, and this document makes no speed claims. The workflow reports on
-each run whether the runner had a device; where there is none the Metal tests skip themselves.
+the CPU reference. That is a virtual GPU, so it shows the code is correct more than it shows
+speed; timings from the same runner are in [Speed](#speed). The workflow reports on each run
+whether the runner had a device; where there is none the Metal tests skip themselves.
 
 ## What is the same as CUDA
 
@@ -98,9 +98,38 @@ Visual Studio solution has no Metal project.
 
 Tests that need a GPU print that they were skipped where there is none.
 
+## Speed
+
+Measured by the Benchmark workflow (`.github/workflows/benchmark.yml`, which runs
+`LanguageModels.Benchmarks/Benchmark.cpp`) on GitHub's `macos-latest` runner: an Apple M1
+(Virtual) with 3 cores and 7 GB, and a paravirtualized GPU shared with other jobs. One
+training step in `float` with Adam, Release build, mean over many steps:
+
+| Vocabulary (source / target) | `Sequential` | `Parallel` (3 threads) | `Device` (Metal) |
+|---|---|---|---|
+| 3,000 / 5,000 | 3.92 ms | 2.27 ms (1.7x) | 3.50 ms (1.1x) |
+| 16,097 / 30,152 (the full `fra.txt`) | 18.5 ms | 13.6 ms (1.4x) | 8.52 ms (2.2x) |
+
+One epoch of the full data (191,351 pairs) is then about 59 minutes sequentially, 43 minutes on
+three threads and 27 minutes on the GPU.
+
+How to read this:
+
+- **It is a virtual machine.** The CPU has three cores that other jobs share, and the GPU is
+  virtual, so the numbers are noisy and say little about a physical Mac. They cannot be compared
+  with the NVIDIA table in [CUDA.md](CUDA.md), which is a different machine.
+- **The gain grows with the vocabulary**, as it does with CUDA: the GPU does the work that grows
+  with the vocabulary, and at 3,000 words there is too little of it to pay for the GPU.
+- **The gain is much smaller than CUDA's** (2.2x here, 42x there at the full vocabulary). Some of
+  the reason is probably that this single-threaded CPU is fast and the step is not completely
+  dominated by the vocabulary here, and some that every step waits for several GPU passes, which
+  a virtual GPU may make expensive. Neither explanation has been measured. Profiling on a physical
+  Mac with Xcode's Metal tools is the way to find out, and fewer waits per step is the obvious
+  first thing to try.
+
 ## Limits
 
 - Only `MiniTransformer` has a GPU path, and only in `float` on Metal.
 - Batch size is 1, as everywhere in the library.
 - Dense updates: Adam updates all three tables at every step, as the CPU does.
-- No timings on a physical Mac yet, and no profiling with Xcode's Metal tools.
+- Timings exist only from a virtual machine, and there is no profiling with Xcode's Metal tools.

@@ -27,9 +27,21 @@ Release build, RTX 4060 Ti and a 16-thread CPU:
 | `Parallel`: `trainStepMultipleThread`, 16 threads | 11 ms | 4.4x | about 36 minutes |
 | `Device`: `trainStepDevice`, on the GPU (here CUDA) | 1.5 ms | 34x | about 4.7 minutes |
 
-These numbers are for an NVIDIA GPU. See [CUDA](#cuda-optional) and [docs/CUDA.md](docs/CUDA.md)
-for how it works and how it was measured, and [Metal](#metal-apple-gpu) and
-[docs/METAL.md](docs/METAL.md) for the Apple GPU version, which has not been timed on a real Mac.
+These numbers are for an NVIDIA GPU (RTX 4060 Ti, through CUDA). See [CUDA](#cuda-optional) and
+[docs/CUDA.md](docs/CUDA.md) for how it works and how it was measured.
+
+The same step on Apple, measured on GitHub's macOS runner (an Apple M1 (Virtual) with 3 cores
+and a virtual GPU, `float`, Release build), where `Device` runs through Metal:
+
+| Execution | per step | speedup | one epoch (191,351 pairs) |
+|---|---|---|---|
+| `Sequential`: `trainStep`, one thread | 18.5 ms | 1x | about 59 minutes |
+| `Parallel`: `trainStepMultipleThread`, 3 threads | 13.6 ms | 1.4x | about 43 minutes |
+| `Device`: `trainStepDevice`, Metal GPU | 8.5 ms | 2.2x | about 27 minutes |
+
+That is a small shared virtual machine with a virtual GPU, so it shows the shape of the result
+and not what a Mac can do, and it cannot be compared with the NVIDIA table above. See
+[Metal](#metal-apple-gpu) and [docs/METAL.md](docs/METAL.md).
 
 It is a sibling of the MachineLearningModels repository, which covers classical
 (non-deep-learning) ML algorithms and uses the same project layout.
@@ -232,8 +244,8 @@ in [docs/METAL.md](docs/METAL.md).
 - **Status.** The development machine is Windows, so the Metal code is built and tested by the
   macOS job of CI, not on the author's own hardware. GitHub's macOS runner reports a Metal
   device (an "Apple Paravirtual device" with unified memory), the Metal tests run on it and
-  pass, and they skip themselves where a machine has no device. There are no timings yet: the
-  runner's GPU is virtual, so its speed says little about a real Mac.
+  pass, and they skip themselves where a machine has no device. Timings from that runner are in
+  the table at the top; its GPU is virtual, so they say little about a real Mac.
 
 ### What the example program does
 
