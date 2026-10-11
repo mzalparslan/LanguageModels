@@ -15,11 +15,13 @@ enum class ExecutionStrategy {
 	// results as Sequential, only faster on a large vocabulary.
 	Parallel,
 
-	// The NVIDIA GPU: MiniTransformer::trainStepCuda(). The vocabulary-sized part
-	// of every step runs on the GPU, so it is much faster on a large vocabulary.
+	// The GPU: MiniTransformer::trainStepDevice(). The vocabulary-sized part of
+	// every step runs on the GPU, so it is much faster on a large vocabulary.
 	// Results are the same as Sequential to within rounding, not bit for bit.
-	// Needs a CUDA device; training with it throws CudaError otherwise.
-	Cuda
+	// Which GPU is up to the machine: an NVIDIA GPU through CUDA, or an Apple GPU
+	// through Metal (float models only: Metal has no double). Training with it throws
+	// DeviceError when no GPU can be used.
+	Device
 };
 
 /**
@@ -31,8 +33,8 @@ inline const char* toString(ExecutionStrategy strategy) {
 		return "Sequential";
 	case ExecutionStrategy::Parallel:
 		return "Parallel";
-	case ExecutionStrategy::Cuda:
-		return "Cuda";
+	case ExecutionStrategy::Device:
+		return "Device";
 	}
 	return "Unknown";
 }

@@ -113,30 +113,34 @@ From a pipeline, one line:
 
 ```cpp
 Pipeline<float, MiniTransformer<float>, TranslationParameters<float>>
-    pipeline(parameters, ExecutionStrategy::Cuda);
+    pipeline(parameters, ExecutionStrategy::Device);
 
 pipeline.train(pairs);      // uploads, trains on the GPU, downloads the weights
 pipeline.evaluate(pairs);   // on the CPU, as before
 ```
 
-`ExecutionStrategy::Cuda` throws `CudaError` if there is no usable GPU. Check first with
-`cuda::isAvailable()` and fall back to `ExecutionStrategy::Parallel` if you prefer.
+`ExecutionStrategy::Device` trains on the GPU the machine has: this one through CUDA, or an
+Apple GPU through Metal (see [METAL.md](METAL.md)). It throws `DeviceError` if there is no
+usable GPU for the model's type. Check first with `gpu::isAvailable<float>()` (or
+`cuda::isAvailable()` for CUDA alone) and fall back to `ExecutionStrategy::Parallel` if you
+prefer.
 
 Directly on the model, when you write your own loop:
 
 ```cpp
 MiniTransformer<float> model(sourceVocab, targetVocab);
-auto head = model.createCudaHead();          // uploads the weights
+auto head = model.createDeviceHead();        // uploads the weights
 
 for (std::size_t step = 1; step <= steps; step++) {
-    float loss = model.trainStepCuda(head, source, decoderInput, expected,
-                                     0.001f, UpdateRule::adam(step));
+    float loss = model.trainStepDevice(head, source, decoderInput, expected,
+                                       0.001f, UpdateRule::adam(step));
 }
-model.downloadFromCudaHead(head);            // weights back to the CPU model
+model.downloadFromDeviceHead(head);          // weights back to the CPU model
 ```
 
-`cuda::VocabularyHead<T>` itself (`include/cuda/CudaVocabularyHead.h`) is plain C++ with no
-CUDA includes. It is defined for `float` and `double`; the `double` head matches the CPU
+`head` is a `gpu::VocabularyHead<T>` (`include/gpu/GpuVocabularyHead.h`), which holds the CUDA
+head or the Metal head, whichever is present, and forwards to it. `cuda::VocabularyHead<T>`
+itself (`include/cuda/CudaVocabularyHead.h`) is plain C++ with no CUDA includes. It is defined for `float` and `double`; the `double` head matches the CPU
 model to within rounding, the `float` head is faster.
 
 The interface headers never include CUDA headers, so any C++ compiler can use them. The

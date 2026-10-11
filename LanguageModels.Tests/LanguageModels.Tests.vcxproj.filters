@@ -40,6 +40,12 @@
     <Filter Include="unit\cuda">
       <UniqueIdentifier>{a1b2c3dc-1a2b-4c3d-8e4f-5f6a7b8c9d0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="unit\gpu">
+      <UniqueIdentifier>{1B682783-88AE-4C95-A967-95FE8729E26E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unit\metal">
+      <UniqueIdentifier>{9C18ACBA-43CB-4815-A022-1188FEA5578D}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -127,7 +133,7 @@
     <ClCompile Include="unit\models\MiniTransformerThreadingTests.cpp">
       <Filter>unit\models</Filter>
     </ClCompile>
-    <ClCompile Include="unit\models\MiniTransformerCudaTests.cpp">
+    <ClCompile Include="unit\models\MiniTransformerDeviceTests.cpp">
       <Filter>unit\models</Filter>
     </ClCompile>
     <ClCompile Include="unit\models\MiniTransformerFloatTests.cpp">
@@ -172,7 +178,19 @@
     <ClCompile Include="unit\cuda\CudaVocabularyHeadTests.cpp">
       <Filter>unit\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="unit\pipelines\MiniTransformerCudaPipelineTests.cpp">
+    <ClCompile Include="unit\gpu\GpuVocabularyHeadTests.cpp">
+      <Filter>unit\gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\metal\MetalRuntimeTests.cpp">
+      <Filter>unit\metal</Filter>
+    </ClCompile>
+    <ClCompile Include="unit\metal\MetalVocabularyHeadTests.cpp">
+      <Filter>unit\metal</Filter>
+    </ClCompile>
+    <ClInclude Include="unit\gpu\HeadReference.h">
+      <Filter>unit\gpu</Filter>
+    </ClInclude>
+    <ClCompile Include="unit\pipelines\MiniTransformerDevicePipelineTests.cpp">
       <Filter>unit\pipelines</Filter>
     </ClCompile>
     <ClCompile Include="unit\models\MoELayerTests.cpp">

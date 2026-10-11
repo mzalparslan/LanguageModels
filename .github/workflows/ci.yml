@@ -3,8 +3,9 @@ name: CI
 # Builds the examples and the unit tests with each platform's own compiler
 # (GCC on Linux, Apple clang on macOS) and runs the tests. The CUDA part is not
 # built here: neither runner has an NVIDIA GPU, so the stand-in is used and the
-# GPU tests skip themselves. GitHub's standard macOS runners also do not expose
-# a Metal device, so nothing here exercises an Apple GPU.
+# CUDA tests skip themselves. On macOS the Metal code is built and its tests run when
+# the runner has a Metal device and skip themselves when it does not; the step
+# "Report whether a Metal device was available" says which happened.
 
 on:
   push:
@@ -48,6 +49,10 @@ jobs:
           ${CXX:-c++} --version
           make --version | head -1
 
+      # Shows compiler errors as annotations on the run, where they are easy to find.
+      - name: Annotate compiler errors
+        run: echo "::add-matcher::.github/compiler-errors-matcher.json"
+
       - name: Build the examples
         run: make examples BUILD=release -j"$(getconf _NPROCESSORS_ONLN)"
 
@@ -60,6 +65,19 @@ jobs:
         run: >
           ./build/release/bin/LanguageModels.Tests
           --gtest_filter=-WordErrorRateTest.CountsSubstitutionsInsertionsAndDeletions:BleuTest.ModifiedPrecisionClipsRepeatedWords:BleuTest.ReproducesThePapersPrecisionsForTheGoodCandidate:BleuTest.ReproducesThePapersPrecisionsForTheBadCandidate:BleuTest.GoodCandidateScoresFarAboveBadCandidate:BleuTest.CorpusBleuSumsCountsInsteadOfAveragingSentences:BleuTest.ShortCandidatesArePenalisedByTheBrevityPenalty:RougeTest.RougeOneCountsSharedWords:RougeTest.RougeTwoCountsSharedWordPairs:RougeTest.RepeatedWordsAreClippedToTheReferenceCount:RougeTest.RougeLUsesTheLongestCommonSubsequence
+
+      # Whether the Metal tests above really ran on a GPU depends on the runner: a virtual
+      # machine may have no Metal device. Say so on the run, as an annotation.
+      - name: Report whether a Metal device was available
+        if: runner.os == 'macOS'
+        run: |
+          OUTPUT="$(./build/release/bin/LanguageModels.Tests --gtest_filter='MetalRuntimeTest.*' 2>&1 || true)"
+          if echo "$OUTPUT" | grep -q "no Metal device"; then
+            echo "::notice title=Metal::No Metal device on this runner, so the Metal tests were skipped."
+          else
+            echo "::notice title=Metal::A Metal device was available. $(echo "$OUTPUT" | grep 'Metal  \]' | head -1)"
+          fi
+          system_profiler SPDisplaysDataType || true
 
       # Known failures: string literals in TextMetricsTests.cpp were damaged by a bulk edit.
       # Reported here so they stay visible, but they do not fail the build.

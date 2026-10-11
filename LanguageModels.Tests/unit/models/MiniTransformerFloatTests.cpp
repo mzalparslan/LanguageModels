@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "CudaRuntime.h"
+#include "GpuVocabularyHead.h"
 #include "MiniTransformerPipeline.h"
 #include "Parameter.h"
 #include "RMSNorm.h"
@@ -13,8 +13,8 @@
 // library quietly assumes double (a conversion, a literal), and that the float model trains,
 // translates and gives the same results whichever way a step is run.
 #define SKIP_WITHOUT_GPU() \
-    if (!cuda::isAvailable()) { \
-        std::cout << "[  SKIPPED ] no CUDA device, or this build has no CUDA support\n"; \
+    if (!gpu::isAvailable<float>()) { \
+        std::cout << "[  SKIPPED ] no GPU (CUDA or Metal), or this build has none\n"; \
         return; \
     }
 
@@ -176,39 +176,39 @@ TEST(MiniTransformerFloatTest, RejectsTheSameInvalidInputAsTheDoubleModel) {
 
 // ---------------------------------------------------------------- the float GPU step
 
-TEST(MiniTransformerFloatCudaTest, MatchesTheCpuFloatStepToWithinFloatPrecision) {
+TEST(MiniTransformerFloatDeviceTest, MatchesTheCpuFloatStepToWithinFloatPrecision) {
     SKIP_WITHOUT_GPU();
     MiniTransformer<float> cpu(sourceVocab, targetVocab);
-    MiniTransformer<float> gpu(sourceVocab, targetVocab);
-    cuda::VocabularyHead<float> head = gpu.createCudaHead();
+    MiniTransformer<float> onDevice(sourceVocab, targetVocab);
+    gpu::VocabularyHead<float> head = onDevice.createDeviceHead();
 
     for (std::size_t step = 1; step <= 5; step++) {
         const float cpuLoss = cpu.trainStep(source, decoderInput, expectedOutput, 0.005f, UpdateRule::adam(step));
-        const float gpuLoss = gpu.trainStepCuda(head, source, decoderInput, expectedOutput, 0.005f, UpdateRule::adam(step));
+        const float gpuLoss = onDevice.trainStepDevice(head, source, decoderInput, expectedOutput, 0.005f, UpdateRule::adam(step));
         ASSERT_NEAR(gpuLoss, cpuLoss, 1e-4f * std::max(1.0f, std::fabs(cpuLoss))) << "loss, step " << step;
     }
 
-    gpu.downloadFromCudaHead(head);
+    onDevice.downloadFromDeviceHead(head);
     Tensor<float> cpuLogits, gpuLogits;
     cpu.forward(source, decoderInput, cpuLogits);
-    gpu.forward(source, decoderInput, gpuLogits);
+    onDevice.forward(source, decoderInput, gpuLogits);
     expectClose(gpuLogits, asDouble(cpuLogits), 1e-2, "logits after training");
 }
 
-TEST(MiniTransformerFloatCudaTest, TrainingOnTheGpuInFloatReducesTheLossAndTranslates) {
+TEST(MiniTransformerFloatDeviceTest, TrainingOnTheGpuInFloatReducesTheLossAndTranslates) {
     SKIP_WITHOUT_GPU();
     MiniTransformer<float> model(12, 10);
-    cuda::VocabularyHead<float> head = model.createCudaHead();
+    gpu::VocabularyHead<float> head = model.createDeviceHead();
     const std::vector<std::size_t> tinySource = { 3, 4, 5, 6 };
 
     float first = 0.0f, last = 0.0f;
     for (std::size_t step = 1; step <= 150; step++) {
-        last = model.trainStepCuda(head, tinySource, { 1, 2, 3, 4, 5 }, { 2, 3, 4, 5, 0 }, 0.005f, UpdateRule::adam(step));
+        last = model.trainStepDevice(head, tinySource, { 1, 2, 3, 4, 5 }, { 2, 3, 4, 5, 0 }, 0.005f, UpdateRule::adam(step));
         if (step == 1) {
             first = last;
         }
     }
-    model.downloadFromCudaHead(head);
+    model.downloadFromDeviceHead(head);
 
     EXPECT_LT(last, 0.1f * first);
     EXPECT_EQ(model.generate(tinySource, 1, 0, 10), (std::vector<std::size_t>{ 1, 2, 3, 4, 5, 0 }));
@@ -262,9 +262,9 @@ TEST(FloatTranslationPipelineTest, ParallelExecutionGivesTheSameResultsAsSequent
     EXPECT_EQ(sequential.evaluate(toyPairs()).teacherForced.loss, parallel.evaluate(toyPairs()).teacherForced.loss);
 }
 
-TEST(FloatTranslationPipelineTest, CudaExecutionTrainsAModelThatTranslates) {
+TEST(FloatTranslationPipelineTest, DeviceExecutionTrainsAModelThatTranslates) {
     SKIP_WITHOUT_GPU();
-    FloatPipeline pipeline(fastParameters(300), ExecutionStrategy::Cuda, quietLogger());
+    FloatPipeline pipeline(fastParameters(300), ExecutionStrategy::Device, quietLogger());
 
     pipeline.train(toyPairs());
 

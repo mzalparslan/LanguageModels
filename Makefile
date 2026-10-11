@@ -21,6 +21,7 @@ INCLUDE_DIRS := \
 	-ILanguageModels/include/pipelines \
 	-ILanguageModels/include/utilities \
 	-ILanguageModels/include/cuda \
+	-ILanguageModels/include/gpu \
 	-ILanguageModels/include/normalizations \
 	-ILanguageModels/include/models \
 	-ILanguageModels/include/tokenizers \
@@ -66,7 +67,20 @@ else
 	CUDA_LIBS :=
 endif
 
-DEPENDENCY_FILES := $(EXAMPLE_OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d) $(CUDA_OBJECTS:.o=.d)
+# Metal (Apple GPU): built automatically on macOS and nowhere else. Elsewhere the inline
+# stand-ins in include/gpu/MetalRuntime.h and MetalVocabularyHead.h are used, so there is
+# nothing to build or link. The .mm files are Objective-C++ and need ARC.
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	METAL_OBJECTS := $(OBJECT_DIR)/LanguageModels.Metal/src/MetalRuntime.o \
+		$(OBJECT_DIR)/LanguageModels.Metal/src/MetalVocabularyHead.o
+	METAL_LIBS := -framework Metal -framework Foundation
+else
+	METAL_OBJECTS :=
+	METAL_LIBS :=
+endif
+
+DEPENDENCY_FILES := $(EXAMPLE_OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d) $(CUDA_OBJECTS:.o=.d) $(METAL_OBJECTS:.o=.d)
 
 .PHONY: all library examples tests test run clean help
 
@@ -90,17 +104,21 @@ test: $(TEST_NAME)
 run: examples
 	cd $(BINARY_DIR) && ./LanguageModels.Examples $(ARGS)
 
-$(EXAMPLE_NAME): $(EXAMPLE_OBJECTS) $(CUDA_OBJECTS)
+$(EXAMPLE_NAME): $(EXAMPLE_OBJECTS) $(CUDA_OBJECTS) $(METAL_OBJECTS)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $^ $(CUDA_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $^ $(CUDA_LIBS) $(METAL_LIBS) -o $@
 
-$(TEST_NAME): $(TEST_OBJECTS) $(CUDA_OBJECTS)
+$(TEST_NAME): $(TEST_OBJECTS) $(CUDA_OBJECTS) $(METAL_OBJECTS)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $^ $(GTEST_LIBS) $(CUDA_LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $^ $(GTEST_LIBS) $(CUDA_LIBS) $(METAL_LIBS) -o $@
 
 $(OBJECT_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(OBJECT_DIR)/%.o: %.mm
+	@mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fobjc-arc -c $< -o $@
 
 $(OBJECT_DIR)/%.o: %.cu
 	@mkdir -p $(dir $@)

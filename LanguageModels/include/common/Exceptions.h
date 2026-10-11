@@ -82,10 +82,28 @@ public:
 };
 
 /**
+ * @brief A GPU was asked for but cannot be used, or a call to it failed. Catch
+ * this to handle every GPU backend; CudaError and MetalError are the specific ones.
+ */
+class DeviceError : public std::runtime_error {
+public:
+	using std::runtime_error::runtime_error;
+};
+
+/**
  * @brief A CUDA call failed, or CUDA was asked for but is not available (no
  * NVIDIA device, or the library was built without the CUDA Toolkit).
  */
-class CudaError : public std::runtime_error {
+class CudaError : public DeviceError {
 public:
-	using std::runtime_error::runtime_error;
+	using DeviceError::DeviceError;
+};
+
+/**
+ * @brief A Metal call failed, or Metal was asked for but is not available (not an
+ * Apple platform, no Metal device, or a type Metal cannot compute in, such as double).
+ */
+class MetalError : public DeviceError {
+public:
+	using DeviceError::DeviceError;
 };

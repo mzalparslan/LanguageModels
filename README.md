@@ -13,7 +13,7 @@ and optimizers are all written by hand, and every gradient is checked against
 finite differences in the test suite.
 
 > This is a learning project, not a production LLM library. It trains small models, 
-> on CPU (parallel or sequential) and, on NVIDIA GPU for Mini Transformer model. 
+> on CPU (parallel or sequential) and, for the Mini Transformer, on an NVIDIA GPU (CUDA) or an Apple GPU (Metal). 
 > Goal is to show each idea working end to end and to keep the code readable, 
 > not to compete with an established framework on scale.
 
@@ -25,10 +25,11 @@ Release build, RTX 4060 Ti and a 16-thread CPU:
 |---|---|---|---|
 | `Sequential`: `trainStep`, one thread | 50 ms | 1x | about 2.7 hours |
 | `Parallel`: `trainStepMultipleThread`, 16 threads | 11 ms | 4.4x | about 36 minutes |
-| `Cuda`: `trainStepCuda`, on the GPU | 1.5 ms | 34x | about 4.7 minutes |
+| `Device`: `trainStepDevice`, on the GPU (here CUDA) | 1.5 ms | 34x | about 4.7 minutes |
 
-See [CUDA](#cuda-optional) and [docs/CUDA.md](docs/CUDA.md) for how it works and how it was
-measured.
+These numbers are for an NVIDIA GPU. See [CUDA](#cuda-optional) and [docs/CUDA.md](docs/CUDA.md)
+for how it works and how it was measured, and [Metal](#metal-apple-gpu) and
+[docs/METAL.md](docs/METAL.md) for the Apple GPU version, which has not been timed yet.
 
 It is a sibling of the MachineLearningModels repository, which covers classical
 (non-deep-learning) ML algorithms and uses the same project layout.
@@ -90,6 +91,7 @@ LanguageModels/               the header-only library (organized as a VS project
 LanguageModels.Examples/      one driver per course stage, linked into one executable
 LanguageModels.Tests/         Google Test unit tests, mirroring include/
 LanguageModels.Cuda/          optional GPU code (CUDA), built as a static library
+LanguageModels.Metal/         optional GPU code (Metal), Apple platforms only, built by the Makefile
 resources/                    data files used by the examples
 Makefile                      Linux / WSL build (examples and tests)
 LanguageModels.sln            Visual Studio solution
@@ -143,14 +145,14 @@ export CPATH="$(brew --prefix)/include" LIBRARY_PATH="$(brew --prefix)/lib"
 make test BUILD=release
 ```
 
-- **No GPU path.** CUDA does not exist on macOS, so the build uses the stand-in:
-  `cuda::isAvailable()` is `false`, `ExecutionStrategy::Cuda` throws `CudaError`, and
-  `Sequential` and `Parallel` work as on any other platform. There is no Metal
-  implementation.
+- **GPU.** CUDA does not exist on macOS, so the build uses its stand-in; the Apple GPU is
+  reached through Metal instead (see [Metal](#metal-apple-gpu)). The Makefile builds
+  `LanguageModels.Metal/` on macOS by itself and links the Metal and Foundation frameworks.
+  `ExecutionStrategy::Device` then trains on the Apple GPU, for `float` models only.
 - **Checked by CI.** The workflow `.github/workflows/ci.yml` builds the examples and the
   tests on Linux (GCC) and on macOS (Apple clang) and runs the tests on every push to
-  `main` or `dev` and on pull requests. GitHub's standard macOS runners have no usable
-  Metal device, so CI does not exercise an Apple GPU.
+  `main` or `dev` and on pull requests. The Metal tests run where the runner has a Metal
+  device and skip themselves where it does not; the run reports which happened.
 
 ### CUDA (optional)
 
@@ -160,14 +162,16 @@ are described in [docs/CUDA.md](docs/CUDA.md).
 
 - **Interface.** `include/cuda/CudaRuntime.h` and `CudaVocabularyHead.h` are plain C++
   with no CUDA includes. `cuda::isAvailable()` tells you whether a GPU can be used; the
-  rest of the library falls back to the CPU when it cannot.
+  rest of the library falls back to the CPU when it cannot. The model and the pipelines
+  do not use them directly but through `include/gpu/GpuVocabularyHead.h`, which picks
+  CUDA or Metal, whichever the machine has (`gpu::isAvailable<T>()` checks first).
 - **What runs on the GPU.** Almost all of a Mini Transformer training step goes into work
   that grows with the vocabulary: choosing the output word among tens of thousands, and
   updating three tables of millions of numbers when a sentence touches a few dozen of them.
   `cuda::VocabularyHead` keeps those parts on the GPU: the two embedding tables and the
   output projection, with their gradients and Adam state. The small encoder and decoder
   layers stay on the CPU, so a step moves only a few kilobytes between the two.
-  `MiniTransformer::trainStepCuda()` runs a step this way, and `ExecutionStrategy::Cuda`
+  `MiniTransformer::trainStepDevice()` runs a step this way, and `ExecutionStrategy::Device`
   selects it in a pipeline (the weights are copied back to the CPU model when training
   ends, so translating and evaluating work as before).
 - **Speed.** One training step at the vocabulary of the full `fra.txt` (16,097 source and
@@ -177,14 +181,14 @@ are described in [docs/CUDA.md](docs/CUDA.md).
   |---|---|---|---|
   | `trainStep`, one thread | 59 ms | 50 ms | about 2.7 hours |
   | `trainStepMultipleThread`, 16 threads | 18 ms | 11 ms | about 36 minutes |
-  | `trainStepCuda`, on the GPU | 2.7 ms | 1.5 ms | about 4.7 minutes |
+  | `trainStepDevice`, on the GPU | 2.7 ms | 1.5 ms | about 4.7 minutes |
 
   The GPU code follows the model's type: `MiniTransformer<float>` runs a `float` head,
   which moves half as much memory and is where a GPU is fastest. The `float` model gives
-  up precision (about 7 digits instead of 16), so `trainStepCuda` and `trainStep` agree
+  up precision (about 7 digits instead of 16), so `trainStepDevice` and `trainStep` agree
   to about 1e-4 instead of 1e-16, and `trainStepMultipleThread` is still bit-identical to
   `trainStep`. Both models learn the same way in the tests.
-- **Results.** `trainStepCuda` matches `trainStep` to within rounding (about 1e-16 at first).
+- **Results.** `trainStepDevice` matches `trainStep` to within rounding (about 1e-16 at first).
   Training is chaotic, so two runs that are not bit-identical drift apart over a few hundred
   steps, as a different compiler or thread order would also make them; both learn equally
   well. `trainStepMultipleThread` is bit-identical to `trainStep`.
@@ -209,6 +213,25 @@ are described in [docs/CUDA.md](docs/CUDA.md).
   ```
   compute-sanitizer --tool initcheck bin\Debug\x64\LanguageModels.Tests.exe --gtest_filter=CudaVocabularyHead*
   ```
+
+### Metal (Apple GPU)
+
+`LanguageModels.Metal` is the same idea for Apple GPUs, so that `ExecutionStrategy::Device`
+works on a Mac as it does on an NVIDIA machine. The design and what differs from CUDA are
+in [docs/METAL.md](docs/METAL.md).
+
+- **Same interface.** `metal::VocabularyHead` has the interface of `cuda::VocabularyHead`, and
+  `gpu::VocabularyHead` forwards to whichever of the two the machine has. The interface
+  headers are plain C++ and, off Apple platforms, contain inline stand-ins, so nothing
+  extra is built or linked on Windows or Linux.
+- **`float` only.** Metal has no 64-bit floating point, so a `double` model cannot train on
+  an Apple GPU: `Device` throws `DeviceError` for it.
+- **Built by the Makefile on macOS.** The kernels are written in Metal Shading Language and
+  compiled when the first head is created, so the build needs only a C++ compiler and the
+  Metal framework.
+- **Status.** The Metal code has been written but not run on the author's own hardware (the
+  development machine is Windows). It is built and tested by the macOS job of CI, and the
+  Metal tests skip themselves where the runner has no Metal device. There are no timings yet.
 
 ### What the example program does
 
@@ -349,12 +372,14 @@ How it fits together:
   has seen the data, so each adapter builds its `WordTokenizer` or `CharTokenizer` from
   the training part only. Words and characters unseen in training become `<UNK>`, so
   held-out text is scored fairly and nothing leaks from the test set.
-- **`ExecutionStrategy`** is `Sequential`, `Parallel` or `Cuda`. Only `MiniTransformer` acts
+- **`ExecutionStrategy`** is `Sequential`, `Parallel` or `Device`. Only `MiniTransformer` acts
   on it: `Sequential` calls `trainStep()`, `Parallel` calls `trainStepMultipleThread()`
-  (bit-identical results, several threads) and `Cuda` calls `trainStepCuda()` (results
-  equal to within rounding, the vocabulary-sized work on the GPU; it throws `CudaError`
-  when there is no CUDA device, see [CUDA](#cuda-optional)). The other models accept the
-  strategy and train the same way. More strategies can be added to the enum later.
+  (bit-identical results, several threads) and `Device` calls `trainStepDevice()` (results
+  equal to within rounding, the vocabulary-sized work on the GPU). `Device` uses an NVIDIA
+  GPU through CUDA or an Apple GPU through Metal, whichever is present, and throws
+  `DeviceError` when there is none, or when the model is `double` and only Metal is
+  present (see [CUDA](#cuda-optional) and [Metal](#metal-apple-gpu)). The other models
+  accept the strategy and train the same way. More strategies can be added to the enum later.
 - **Logging.** Progress goes through `Logger` (`logger.info() << ...`), the same
   interface as the sibling MachineLearningModels project. The default logger is shared
   and writes to `std::clog`; pass your own to choose the level or the stream.
@@ -517,8 +542,9 @@ repository does not state a license for the compiled file.
 - **Small scale.** Batch size 1, and the models use widths of 16 to 32. Only the Mini
   Transformer trains on several threads or on a GPU; the other models run on one CPU
   thread. Training a real-sized model is not a goal.
-- **GPU support is CUDA only.** There is no Metal (Apple) or other GPU backend, so on
-  macOS everything runs on the CPU.
+- **GPU support is CUDA and Metal, for the Mini Transformer only.** Metal computes in
+  `float` only, and its code could only be built and run on Apple platforms, which is
+  why it is checked by CI and not by the author's own machine.
 - **Failing tests.** Eleven text-metric tests fail, as described under [Tests](#tests).
 - **Mixture of Experts.** The router is not trained (it receives no gradient) and the
   load-balancing auxiliary loss is not computed yet. The experts themselves do train.

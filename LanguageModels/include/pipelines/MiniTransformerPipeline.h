@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "CudaRuntime.h"
-#include "CudaVocabularyHead.h"
+#include "GpuVocabularyHead.h"
 #include "Exceptions.h"
 #include "LogitMetrics.h"
 #include "Metrics.h"
@@ -65,9 +64,9 @@ public:
  * Builds one word vocabulary per language from training pairs, trains the
  * model with teacher forcing (batch size 1, Adam), and scores it by BLEU, word
  * error rate and teacher-forced perplexity. With ExecutionStrategy::Parallel
- * every step is MiniTransformer::trainStepMultipleThread(); with Cuda it is
- * MiniTransformer::trainStepCuda(); otherwise MiniTransformer::trainStep().
- * Sequential and Parallel give the same trained model bit for bit, Cuda to within
+ * every step is MiniTransformer::trainStepMultipleThread(); with Device it is
+ * MiniTransformer::trainStepDevice(); otherwise MiniTransformer::trainStep().
+ * Sequential and Parallel give the same trained model bit for bit, Device to within
  * rounding.
  */
 template <typename T>
@@ -126,15 +125,15 @@ public:
 
 		model.emplace(sourceTokenizer.size(), targetTokenizer.size(), 100, parameters.randomSeed);
 
-		// With ExecutionStrategy::Cuda the vocabulary-sized parameters live on the GPU
+		// With ExecutionStrategy::Device the vocabulary-sized parameters live on the GPU
 		// for the whole run and are copied back at the end.
-		std::optional<cuda::VocabularyHead<T>> gpuHead;
-		if (strategy == ExecutionStrategy::Cuda) {
-			if (!cuda::isAvailable()) {
-				throw CudaError("ExecutionStrategy::Cuda needs a CUDA device, and none is available.");
+		std::optional<gpu::VocabularyHead<T>> gpuHead;
+		if (strategy == ExecutionStrategy::Device) {
+			if (!gpu::isAvailable<T>()) {
+				throw DeviceError("ExecutionStrategy::Device needs a GPU, and " + gpu::describeDevice<T>() + ".");
 			}
-			logger.info() << "GPU: " << cuda::describeDevice();
-			gpuHead.emplace(model->createCudaHead());
+			logger.info() << "GPU: " << gpu::describeDevice<T>();
+			gpuHead.emplace(model->createDeviceHead());
 		}
 
 		std::size_t adamStep = 1; // Adam timestep: 1-based, increased after every example
@@ -142,8 +141,8 @@ public:
 			T totalLoss = T(0);
 			for (const Example& example : examples) {
 				const UpdateRule rule = UpdateRule::adam(adamStep);
-				if (strategy == ExecutionStrategy::Cuda) {
-					totalLoss += model->trainStepCuda(*gpuHead, example.source, example.decoderInput,
+				if (strategy == ExecutionStrategy::Device) {
+					totalLoss += model->trainStepDevice(*gpuHead, example.source, example.decoderInput,
 						example.labels, parameters.learningRate, rule);
 				}
 				else if (strategy == ExecutionStrategy::Parallel) {
@@ -165,7 +164,7 @@ public:
 
 		// Bring the trained weights back, so the model translates and is evaluated on the CPU.
 		if (gpuHead) {
-			model->downloadFromCudaHead(*gpuHead);
+			model->downloadFromDeviceHead(*gpuHead);
 		}
 	}
 

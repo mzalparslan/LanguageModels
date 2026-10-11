@@ -4,7 +4,7 @@
 #include <cmath>
 #include <vector>
 
-#include "CudaVocabularyHead.h"
+#include "GpuVocabularyHead.h"
 #include "FeedForward.h"
 #include "AttentionHead.h"
 #include "RMSNorm.h"
@@ -138,7 +138,7 @@ private:
     /**
      * @brief Requires a GPU head to have the sizes of this model.
      */
-    void requireMatchingHead(const cuda::VocabularyHead<T>& head) const {
+    void requireMatchingHead(const gpu::VocabularyHead<T>& head) const {
         validation::requireSameSize(head.sourceVocab(), encEmb.vocabSize, "GPU head source vocabulary");
         validation::requireSameSize(head.targetVocab(), decEmb.vocabSize, "GPU head target vocabulary");
         validation::requireSameSize(head.width(), d_model, "GPU head width");
@@ -698,15 +698,19 @@ public:
      * @brief Copies the vocabulary-sized parameters (the two embedding tables and the
      * output projection) to the GPU, and returns the object that holds them there.
      *
-     * Pass the result to trainStepCuda() for every step of a training run, and call
-     * downloadFromCudaHead() when the run is over. While training on the GPU the
+     * Pass the result to trainStepDevice() for every step of a training run, and call
+     * downloadFromDeviceHead() when the run is over. While training on the GPU the
      * copy in this model goes stale: do not use forward(), generate() or the other
      * training steps until the weights have been downloaded.
      *
-     * @throws CudaError If CUDA is not available or the GPU runs out of memory.
+     * The GPU is whichever one is present: an NVIDIA GPU through CUDA, or an Apple GPU
+     * through Metal (float models only: Metal has no double). Use gpu::isAvailable<T>()
+     * to check first.
+     *
+     * @throws DeviceError If no GPU can be used for T or the GPU runs out of memory.
      */
-    cuda::VocabularyHead<T> createCudaHead() const {
-        cuda::VocabularyHead<T> head(encEmb.vocabSize, decEmb.vocabSize, d_model);
+    gpu::VocabularyHead<T> createDeviceHead() const {
+        gpu::VocabularyHead<T> head(encEmb.vocabSize, decEmb.vocabSize, d_model);
         head.uploadWeights(encEmb.table.value.data, decEmb.table.value.data, proj.W.value.data, proj.b.value.data);
         return head;
     }
@@ -719,9 +723,9 @@ public:
      * parameters are cleared here, so a later Adam step on the CPU starts them fresh
      * instead of mixing in state from before the GPU run.
      *
-     * @param head The head made by createCudaHead() for this model.
+     * @param head The head made by createDeviceHead() for this model.
      */
-    void downloadFromCudaHead(const cuda::VocabularyHead<T>& head) {
+    void downloadFromDeviceHead(const gpu::VocabularyHead<T>& head) {
         requireMatchingHead(head);
         head.downloadWeights(encEmb.table.value.data, decEmb.table.value.data, proj.W.value.data, proj.b.value.data);
         for (Parameter<T>* parameter : { &encEmb.table, &decEmb.table, &proj.W, &proj.b }) {
@@ -744,16 +748,16 @@ public:
      * a different order (and, for a float model, in float), so the results are close
      * but not bit-identical.
      *
-     * @param head The GPU parameters, from createCudaHead().
+     * @param head The GPU parameters, from createDeviceHead().
      * @param src Source token ids.
      * @param tgt Decoder input ids.
      * @param label Expected next-token ids, one per decoder position.
      * @param lr Learning rate.
      * @param rule Optimizer to apply (e.g. UpdateRule::adam(step)).
      * @return Summed cross-entropy loss over target positions.
-     * @throws The same exceptions as trainStep(), and CudaError if a CUDA call fails.
+     * @throws The same exceptions as trainStep(), and DeviceError if a GPU call fails.
      */
-    T trainStepCuda(cuda::VocabularyHead<T>& head,
+    T trainStepDevice(gpu::VocabularyHead<T>& head,
         const std::vector<std::size_t>& src,
         const std::vector<std::size_t>& tgt,
         const std::vector<std::size_t>& label,

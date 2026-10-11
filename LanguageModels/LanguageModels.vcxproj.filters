@@ -96,6 +96,15 @@
     <ClInclude Include="include\cuda\CudaVocabularyHead.h">
       <Filter>cuda</Filter>
     </ClInclude>
+    <ClInclude Include="include\gpu\GpuVocabularyHead.h">
+      <Filter>cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gpu\MetalRuntime.h">
+      <Filter>cuda</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gpu\MetalVocabularyHead.h">
+      <Filter>cuda</Filter>
+    </ClInclude>
     <ClInclude Include="include\metrics\LogitMetrics.h">
       <Filter>metrics</Filter>
     </ClInclude>

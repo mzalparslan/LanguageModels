@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "CudaRuntime.h"
+#include "GpuVocabularyHead.h"
 #include "MiniTransformerPipeline.h"
 #include "VanillaRnnPipeline.h"
 #include <cmath>
@@ -7,8 +7,8 @@
 #include <sstream>
 
 #define SKIP_WITHOUT_GPU() \
-    if (!cuda::isAvailable()) { \
-        std::cout << "[  SKIPPED ] no CUDA device, or this build has no CUDA support\n"; \
+    if (!gpu::isAvailable<double>()) { \
+        std::cout << "[  SKIPPED ] no GPU that computes in double (CUDA), or this build has none\n"; \
         return; \
     }
 
@@ -51,13 +51,13 @@ namespace {
     }
 }
 
-TEST(TranslationPipelineCudaTest, CudaIsAnExecutionStrategyWithAName) {
-    EXPECT_STREQ(toString(ExecutionStrategy::Cuda), "Cuda");
+TEST(TranslationPipelineDeviceTest, DeviceIsAnExecutionStrategyWithAName) {
+    EXPECT_STREQ(toString(ExecutionStrategy::Device), "Device");
 }
 
-TEST(TranslationPipelineCudaTest, TrainsAModelThatTranslatesItsTrainingSentences) {
+TEST(TranslationPipelineDeviceTest, TrainsAModelThatTranslatesItsTrainingSentences) {
     SKIP_WITHOUT_GPU();
-    TranslationPipeline pipeline(fastParameters(300), ExecutionStrategy::Cuda, quietLogger());
+    TranslationPipeline pipeline(fastParameters(300), ExecutionStrategy::Device, quietLogger());
 
     pipeline.train(toyPairs());
 
@@ -67,34 +67,34 @@ TEST(TranslationPipelineCudaTest, TrainsAModelThatTranslatesItsTrainingSentences
     EXPECT_DOUBLE_EQ(pipeline.evaluate(toyPairs()).exactMatchRate, 1.0);
 }
 
-TEST(TranslationPipelineCudaTest, ARunOfAFewHundredStepsMatchesSequentialToWithinRounding) {
+TEST(TranslationPipelineDeviceTest, ARunOfAFewHundredStepsMatchesSequentialToWithinRounding) {
     SKIP_WITHOUT_GPU();
     // One epoch is 100 Adam steps: the two runs differ only by rounding (about 1e-11).
     const auto pairs = wideVocabularyPairs(100);
     const std::vector<SentencePair> someTestPairs(pairs.begin(), pairs.begin() + 10);
     TranslationPipeline sequential(fastParameters(1), ExecutionStrategy::Sequential, quietLogger());
-    TranslationPipeline gpu(fastParameters(1), ExecutionStrategy::Cuda, quietLogger());
+    TranslationPipeline onDevice(fastParameters(1), ExecutionStrategy::Device, quietLogger());
 
     sequential.train(pairs);
-    gpu.train(pairs);
+    onDevice.train(pairs);
     const double sequentialLoss = sequential.modelAdapter().finalTrainingLoss();
-    const double gpuLoss = gpu.modelAdapter().finalTrainingLoss();
+    const double gpuLoss = onDevice.modelAdapter().finalTrainingLoss();
     const TranslationMetrics a = sequential.evaluate(someTestPairs);
-    const TranslationMetrics b = gpu.evaluate(someTestPairs);
+    const TranslationMetrics b = onDevice.evaluate(someTestPairs);
 
     EXPECT_NEAR(gpuLoss, sequentialLoss, 1e-6 * sequentialLoss);
     EXPECT_NEAR(b.teacherForced.loss, a.teacherForced.loss, 1e-6 * a.teacherForced.loss);
 }
 
-TEST(TranslationPipelineCudaTest, LongerRunsTrainAsWellEvenThoughTheyDriftApartFromSequential) {
+TEST(TranslationPipelineDeviceTest, LongerRunsTrainAsWellEvenThoughTheyDriftApartFromSequential) {
     SKIP_WITHOUT_GPU();
     // Training is chaotic: two runs that differ by a rounding error drift apart over a
     // few hundred steps, as any two runs that are not bit-identical do (a different
     // compiler or thread order would do the same). What must hold is that the GPU run
     // learns just as well, which is why this compares the quality reached, not the values.
     const auto pairs = wideVocabularyPairs(100);
-    TranslationPipeline brief(fastParameters(1), ExecutionStrategy::Cuda, quietLogger());
-    TranslationPipeline longer(fastParameters(4), ExecutionStrategy::Cuda, quietLogger());
+    TranslationPipeline brief(fastParameters(1), ExecutionStrategy::Device, quietLogger());
+    TranslationPipeline longer(fastParameters(4), ExecutionStrategy::Device, quietLogger());
     TranslationPipeline sequential(fastParameters(4), ExecutionStrategy::Sequential, quietLogger());
 
     brief.train(pairs);
@@ -110,30 +110,30 @@ TEST(TranslationPipelineCudaTest, LongerRunsTrainAsWellEvenThoughTheyDriftApartF
     EXPECT_LT(cpuLoss, 2.0 * gpuLoss);
 }
 
-TEST(TranslationPipelineCudaTest, TheGpuIsNamedInTheLog) {
+TEST(TranslationPipelineDeviceTest, TheGpuIsNamedInTheLog) {
     SKIP_WITHOUT_GPU();
     std::ostringstream output;
     Logger logger(LogLevel::Info, output);
-    TranslationPipeline pipeline(fastParameters(1), ExecutionStrategy::Cuda, logger);
+    TranslationPipeline pipeline(fastParameters(1), ExecutionStrategy::Device, logger);
 
     pipeline.train(toyPairs());
 
-    EXPECT_NE(output.str().find("execution: Cuda"), std::string::npos) << output.str();
+    EXPECT_NE(output.str().find("execution: Device"), std::string::npos) << output.str();
     EXPECT_NE(output.str().find("GPU: "), std::string::npos);
 }
 
-TEST(TranslationPipelineCudaTest, WithoutACudaDeviceTrainingWithCudaThrowsCudaError) {
-    if (cuda::isAvailable()) {
+TEST(TranslationPipelineDeviceTest, WithoutAGpuTrainingOnTheDeviceThrowsDeviceError) {
+    if (gpu::isAvailable<double>()) {
         return; // only meaningful where there is nothing to use
     }
-    TranslationPipeline pipeline(fastParameters(1), ExecutionStrategy::Cuda, quietLogger());
+    TranslationPipeline pipeline(fastParameters(1), ExecutionStrategy::Device, quietLogger());
 
-    EXPECT_THROW(pipeline.train(toyPairs()), CudaError);
+    EXPECT_THROW(pipeline.train(toyPairs()), DeviceError);
 
     EXPECT_FALSE(pipeline.isTrained());
 }
 
-TEST(TranslationPipelineCudaTest, OtherModelsAcceptTheStrategyAndTrainTheSameWay) {
+TEST(TranslationPipelineDeviceTest, OtherModelsAcceptTheStrategyAndTrainTheSameWay) {
     using RnnPipeline = Pipeline<double, VanillaRNN<double>, RnnParameters<double>>;
     RnnParameters<double> parameters;
     parameters.hiddenSize = 16;
@@ -146,11 +146,11 @@ TEST(TranslationPipelineCudaTest, OtherModelsAcceptTheStrategyAndTrainTheSameWay
         text.insert(text.end(), { 'a', 'b', 'c', ' ' });
     }
     RnnPipeline sequential(parameters, ExecutionStrategy::Sequential, quietLogger());
-    RnnPipeline cudaStrategy(parameters, ExecutionStrategy::Cuda, quietLogger());
+    RnnPipeline deviceStrategy(parameters, ExecutionStrategy::Device, quietLogger());
 
     sequential.train(text);
-    cudaStrategy.train(text);
+    deviceStrategy.train(text);
 
     // The RNN ignores the strategy, so this needs no GPU and the results are identical.
-    EXPECT_EQ(sequential.evaluate(text).model.loss, cudaStrategy.evaluate(text).model.loss);
+    EXPECT_EQ(sequential.evaluate(text).model.loss, deviceStrategy.evaluate(text).model.loss);
 }
