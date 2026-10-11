@@ -46,6 +46,11 @@ RESOURCE_FILES := $(wildcard resources/*.txt)
 TEST_SOURCES := $(shell find LanguageModels.Tests -type f -name '*.cpp')
 TEST_OBJECTS := $(patsubst %.cpp,$(OBJECT_DIR)/%.o,$(TEST_SOURCES))
 
+# The benchmark: times a training step run sequentially, on several threads and on the GPU.
+BENCH_NAME := $(BINARY_DIR)/LanguageModels.Benchmark
+BENCH_SOURCES := $(wildcard LanguageModels.Benchmarks/*.cpp)
+BENCH_OBJECTS := $(patsubst %.cpp,$(OBJECT_DIR)/%.o,$(BENCH_SOURCES))
+
 # Google Test (e.g. `apt install libgtest-dev`).
 GTEST_LIBS ?= -lgtest_main -lgtest -pthread
 
@@ -80,9 +85,9 @@ else
 	METAL_LIBS :=
 endif
 
-DEPENDENCY_FILES := $(EXAMPLE_OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d) $(CUDA_OBJECTS:.o=.d) $(METAL_OBJECTS:.o=.d)
+DEPENDENCY_FILES := $(EXAMPLE_OBJECTS:.o=.d) $(TEST_OBJECTS:.o=.d) $(BENCH_OBJECTS:.o=.d) $(CUDA_OBJECTS:.o=.d) $(METAL_OBJECTS:.o=.d)
 
-.PHONY: all library examples tests test run clean help
+.PHONY: all library examples tests test run bench clean help
 
 all: examples
 
@@ -103,6 +108,14 @@ test: $(TEST_NAME)
 
 run: examples
 	cd $(BINARY_DIR) && ./LanguageModels.Examples $(ARGS)
+
+# Use BUILD=release: a debug build says little about speed.
+bench: $(BENCH_NAME)
+	$(BENCH_NAME) $(ARGS)
+
+$(BENCH_NAME): $(BENCH_OBJECTS) $(CUDA_OBJECTS) $(METAL_OBJECTS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $^ $(CUDA_LIBS) $(METAL_LIBS) -o $@
 
 $(EXAMPLE_NAME): $(EXAMPLE_OBJECTS) $(CUDA_OBJECTS) $(METAL_OBJECTS)
 	@mkdir -p $(dir $@)
@@ -136,6 +149,7 @@ help:
 	@echo "make tests           Build the Google Test executable"
 	@echo "make CUDA=1          Build with the GPU code (needs the CUDA Toolkit); also for tests and run"
 	@echo "make test            Build and run all tests"
+	@echo "make bench BUILD=release   Time a training step: sequential, parallel and on the GPU"
 	@echo "make clean           Remove Makefile build outputs"
 
 -include $(DEPENDENCY_FILES)

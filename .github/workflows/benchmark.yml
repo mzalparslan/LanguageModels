@@ -1,0 +1,58 @@
+name: Benchmark
+
+# Times one Mini Transformer training step on GitHub's macOS runner, sequentially, on several
+# threads and on the GPU (Metal), and prints a Markdown table. Run it from the Actions tab,
+# or it runs when the benchmark itself changes.
+#
+# Read the numbers with care: the runner is a small virtual machine (a few cores, and a virtual
+# GPU), shared with other jobs, so it says little about a real Mac and varies from run to run.
+# The table is in the job summary, in the log, and in an annotation on the run.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - 'LanguageModels.Benchmarks/**'
+      - '.github/workflows/benchmark.yml'
+
+jobs:
+  benchmark:
+    name: macOS (Apple clang, Metal)
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Describe the machine
+        run: |
+          {
+            echo "- Runner: $(sw_vers -productName) $(sw_vers -productVersion), $(uname -m)"
+            echo "- CPU: $(sysctl -n machdep.cpu.brand_string), $(sysctl -n hw.ncpu) cores, $(( $(sysctl -n hw.memsize) / 1073741824 )) GB memory"
+            echo "- Compiler: $(c++ --version | head -1)"
+          } | tee machine.md
+
+      - name: Build the benchmark
+        run: make build/release/bin/LanguageModels.Benchmark BUILD=release -j"$(getconf _NPROCESSORS_ONLN)"
+
+      - name: Run the benchmark
+        run: ./build/release/bin/LanguageModels.Benchmark | tee benchmark.md
+
+      - name: Publish the table
+        run: |
+          {
+            cat machine.md
+            echo
+            cat benchmark.md
+          } > report.md
+          cp report.md "$GITHUB_STEP_SUMMARY"
+          MESSAGE="$(cat report.md)"
+          MESSAGE="${MESSAGE//'%'/'%25'}"
+          MESSAGE="${MESSAGE//$'\n'/'%0A'}"
+          echo "::notice title=Benchmark::${MESSAGE}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-macos
+          path: report.md
