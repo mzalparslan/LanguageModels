@@ -29,7 +29,7 @@ Release build, RTX 4060 Ti and a 16-thread CPU:
 
 These numbers are for an NVIDIA GPU. See [CUDA](#cuda-optional) and [docs/CUDA.md](docs/CUDA.md)
 for how it works and how it was measured, and [Metal](#metal-apple-gpu) and
-[docs/METAL.md](docs/METAL.md) for the Apple GPU version, which has not been timed yet.
+[docs/METAL.md](docs/METAL.md) for the Apple GPU version, which has not been timed on a real Mac.
 
 It is a sibling of the MachineLearningModels repository, which covers classical
 (non-deep-learning) ML algorithms and uses the same project layout.
@@ -229,9 +229,11 @@ in [docs/METAL.md](docs/METAL.md).
 - **Built by the Makefile on macOS.** The kernels are written in Metal Shading Language and
   compiled when the first head is created, so the build needs only a C++ compiler and the
   Metal framework.
-- **Status.** The Metal code has been written but not run on the author's own hardware (the
-  development machine is Windows). It is built and tested by the macOS job of CI, and the
-  Metal tests skip themselves where the runner has no Metal device. There are no timings yet.
+- **Status.** The development machine is Windows, so the Metal code is built and tested by the
+  macOS job of CI, not on the author's own hardware. GitHub's macOS runner reports a Metal
+  device (an "Apple Paravirtual device" with unified memory), the Metal tests run on it and
+  pass, and they skip themselves where a machine has no device. There are no timings yet: the
+  runner's GPU is virtual, so its speed says little about a real Mac.
 
 ### What the example program does
 
@@ -543,8 +545,8 @@ repository does not state a license for the compiled file.
   Transformer trains on several threads or on a GPU; the other models run on one CPU
   thread. Training a real-sized model is not a goal.
 - **GPU support is CUDA and Metal, for the Mini Transformer only.** Metal computes in
-  `float` only, and its code could only be built and run on Apple platforms, which is
-  why it is checked by CI and not by the author's own machine.
+  `float` only. Its code can only be built and run on Apple platforms, so it is checked by CI
+  (on a virtual GPU) and has not been run on a physical Mac by the author.
 - **Failing tests.** Eleven text-metric tests fail, as described under [Tests](#tests).
 - **Mixture of Experts.** The router is not trained (it receives no gradient) and the
   load-balancing auxiliary loss is not computed yet. The experts themselves do train.

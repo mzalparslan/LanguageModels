@@ -16,13 +16,17 @@ otherwise Metal, and `DeviceError` is thrown when there is neither.
 
 ## Status
 
-Read this before relying on it. This code was written on a Windows machine, which cannot
-compile or run Metal, so none of it has been run on the author's own hardware. What has
-been checked there is everything around it: the backend selection, the stand-ins used on
-other platforms, and the CUDA path through the same interface. The Metal code itself is
-built and tested by the macOS job of the CI workflow, and its tests skip themselves when the
-runner has no Metal device. The run says which happened. No timings exist yet, so this
-document makes no speed claims.
+This code was written on a Windows machine, which cannot compile or run Metal, so it has not
+been run on the author's own hardware. What was checked there is everything around it: the
+backend selection, the stand-ins used on other platforms, and the CUDA path through the same
+interface.
+
+The Metal code itself is built and tested by the macOS job of the CI workflow. On its first
+run the job compiled the Objective-C++ and the kernels without changes, the runner reported a
+Metal device ("Apple Paravirtual device", unified memory), and the Metal tests passed against
+the CPU reference. That is a virtual GPU, so it shows the code is correct, not that it is
+fast: no timings exist yet, and this document makes no speed claims. The workflow reports on
+each run whether the runner had a device; where there is none the Metal tests skip themselves.
 
 ## What is the same as CUDA
 
@@ -99,4 +103,4 @@ Tests that need a GPU print that they were skipped where there is none.
 - Only `MiniTransformer` has a GPU path, and only in `float` on Metal.
 - Batch size is 1, as everywhere in the library.
 - Dense updates: Adam updates all three tables at every step, as the CPU does.
-- No timings yet, and no profiling with Xcode's Metal tools.
+- No timings on a physical Mac yet, and no profiling with Xcode's Metal tools.
