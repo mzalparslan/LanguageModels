@@ -3,7 +3,7 @@
 #include <string>
 #include <map>
 #include <random>
-#include "Bert.h"
+#include "BERT.h"
 #include "WordPieceTokenizer.h"
 
 // Anonymous namespace: keeps these helpers local to this translation unit,
